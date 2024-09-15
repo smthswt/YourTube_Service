@@ -5,10 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d1b29a7b-4359-4f4a-9ebd-cf48a96e8984" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/data/api_key/client_secret.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/subscriptions.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flask.txt" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/YourTube_4_Service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/YourTube_4_Service.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/api_key/client_secret.json" beforeDir="false" afterPath="$PROJECT_DIR$/client_secret.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/subscriptions.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/subscriptions.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/videos.json" beforeDir="false" afterPath="$PROJECT_DIR$/videos.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,9 +29,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 3
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="2m7B3WNLO544gTMnLivorfRprVl" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -35,11 +39,12 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Flask server.Backend_Server.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "feature/Models",
+    "git-widget-placeholder": "develop",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/davidkim/Desktop/Projects/YourTube_4_Service/Backend_Server/data/api_key",
+    "last_opened_file_path": "/Users/davidkim/Desktop/Projects/YourTube_4_Service/Backend_Server",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -53,6 +58,9 @@
       <recent name="$PROJECT_DIR$/data/api_key" />
       <recent name="$PROJECT_DIR$/data" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunManager">
     <configuration name="Backend_Server" type="Python.FlaskServer">
@@ -62,7 +70,8 @@
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+      <option name="SDK_NAME" value="Python 3.9 (Backend_Server)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -81,10 +90,14 @@
       <option name="presentableId" value="Default" />
       <updated>1726417536360</updated>
       <workItem from="1726417537827" duration="971000" />
+      <workItem from="1726421511488" duration="3058000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Backend_Server$Backend_Server.coverage" NAME="Backend_Server Coverage Results" MODIFIED="1726422864127" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
   </component>
 </project>

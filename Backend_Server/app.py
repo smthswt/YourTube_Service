@@ -28,10 +28,11 @@ SCOPES = [
 ]
 
 # .env 파일 활성화
-load_dotenv()
+# load_dotenv()
 
 # Path to the client_secret.json file
-CLIENT_SECRETS_FILE = os.getenv('API_KEY')
+# CLIENT_SECRETS_FILE = os.getenv('API_KEY')
+CLIENT_SECRETS_FILE = 'client_secret.json'
 PORT = 3031
 
 class OAuthHandler(BaseHTTPRequestHandler):
@@ -158,22 +159,26 @@ def home():  # put application's code here
 def subscriptions():
     try:
         subscriptions = get_subscriptions()
+        print("get subscription done")
         channels = list(map(lambda channel: channel['channelId'], subscriptions))
         channel_icons = list(map(lambda channel: channel['thumbnail'], subscriptions))
         videos = get_video_info(channels, channel_icons)
+        print("get video info done")
 
         # JSON 데이터를 파일로 저장
-        file_path = os.path.expanduser('~/Desktop/Projects/YourTube_4_Service/Extension_UI/build/data/subscriptionVideos_test.json')
+        file_path = os.path.expanduser('~/Desktop/Projects/YourTube_4_Service/Extension_UI/build/data/subscriptionVideos.json')
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(videos, f, ensure_ascii=False, indent=4)
+            print("build folder saved")
 
             # JSON 데이터를 두 번째 경로에 저장
             file_path2 = os.path.expanduser(
-                '~/Desktop/YProjects/YourTube_4_Service/Extension_UI/public/data/subscriptionVideos_test.json')
+                '~/Desktop/YProjects/YourTube_4_Service/Extension_UI/public/data/subscriptionVideos.json')
             os.makedirs(os.path.dirname(file_path2), exist_ok=True)
             with open(file_path2, 'w', encoding='utf-8') as f:
                 json.dump(videos, f, ensure_ascii=False, indent=4)
+                print("public folder saved")
 
         return jsonify({
             "message": "result from flask",
@@ -181,6 +186,7 @@ def subscriptions():
             "videos": videos
         })
     except Exception as e:
+        print(f"Error: {e}")  # 서버 로그에 오류 메시지를 출력
         return jsonify({'error': str(e)}), 500
 
 

@@ -18,12 +18,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-//subscriptionVideos.json
+//subscriptionVideos.json -> flask랑 연결된 파일명
 //newvideos.json
-// newvideos_final.json
+// newvideos_final.json -> 임의로 넣어둔 것 gpt api로 카테고리 나눈 것.
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "fetchData") {
-        fetch(chrome.runtime.getURL('data/newvideos_final.json'))
+        fetch(chrome.runtime.getURL('data/subscriptionVideos.json'))
             .then(response => response.json())
             .then(data => sendResponse({ success: true, data: data }))
             .catch(error => sendResponse({ success: false, error: error }));
