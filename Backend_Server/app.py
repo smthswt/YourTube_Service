@@ -174,7 +174,7 @@ def subscriptions():
 
             # JSON 데이터를 두 번째 경로에 저장
             file_path2 = os.path.expanduser(
-                '~/Desktop/YProjects/YourTube_4_Service/Extension_UI/public/data/subscriptionVideos.json')
+                '~/Desktop/Projects/YourTube_4_Service/Extension_UI/public/data/subscriptionVideos.json')
             os.makedirs(os.path.dirname(file_path2), exist_ok=True)
             with open(file_path2, 'w', encoding='utf-8') as f:
                 json.dump(videos, f, ensure_ascii=False, indent=4)

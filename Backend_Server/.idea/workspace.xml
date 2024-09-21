@@ -5,14 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d1b29a7b-4359-4f4a-9ebd-cf48a96e8984" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../.idea/YourTube_4_Service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/YourTube_4_Service.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/api_key/client_secret.json" beforeDir="false" afterPath="$PROJECT_DIR$/client_secret.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/subscriptions.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/subscriptions.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/videos.json" beforeDir="false" afterPath="$PROJECT_DIR$/videos.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/src/App.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,7 +37,7 @@
     "Flask server.Backend_Server.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "develop",
+    "git-widget-placeholder": "feature/Backend",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/davidkim/Desktop/Projects/YourTube_4_Service/Backend_Server",
     "node.js.detected.package.eslint": "true",
@@ -91,6 +86,7 @@
       <updated>1726417536360</updated>
       <workItem from="1726417537827" duration="971000" />
       <workItem from="1726421511488" duration="3058000" />
+      <workItem from="1726508079998" duration="1026000" />
     </task>
     <servers />
   </component>

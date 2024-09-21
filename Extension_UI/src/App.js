@@ -41,38 +41,8 @@ function App() {
     }
   };
 
-    //     const handleRequestToFlaskForAPI = async () => {
-    //     console.log("Flask로 유튜브 구독 채널 목록 요청");
-    //
-    //     try {
-    //         const response = await fetch("http://localhost:5000/subscriptions", {
-    //             method: "GET",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //             },
-    //         });
-    //
-    //         if (!response.ok) {
-    //             throw new Error('Network response was not ok');
-    //         }
-    //         const data = await response.json();
-    //         console.log("Response from Flask :", data);
-    //
-    //         // 받은 데이터를 localStorage에 저장
-    //         if (data.videos) {
-    //             localStorage.setItem('whole_category', JSON.stringify(data.videos));
-    //         }
-    //
-    //         window.alert(message);
-    //
-    //     } catch (error) {
-    //         console.error('Failed to fetch:', error);
-    //         window.alert('Failed to fetch data.');
-    //     }
-    // };
 
-
-    //성공한 샘플 데이터
+    // 성공한 샘플 데이터 양식
     // const CategoryData = {
         //     "userId": "ds",
         //     "videos": [
