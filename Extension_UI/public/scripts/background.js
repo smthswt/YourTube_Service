@@ -30,6 +30,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; // Will respond asynchronously
     }
 });
+
 //
 // chrome.storage.onChanged.addListener((changes, namespace) => {
 //     for (let [key, { oldValue, newValue }] of Object.entries(changes)) {

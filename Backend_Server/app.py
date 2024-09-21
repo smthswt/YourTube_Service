@@ -1,3 +1,4 @@
+import pymongo
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
@@ -14,9 +15,12 @@ from urllib.parse import parse_qs, urlparse
 import webbrowser
 import feedparser
 from dotenv import load_dotenv
+from pymongo import MongoClient
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+# CORS 설정 - 모든 경로에서 CORS 요청 허용
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 # Define the API credentials and scopes
@@ -85,7 +89,8 @@ def get_subscriptions():
         'part': 'snippet',
         'mine': True,
         'order': 'unread',
-        'maxResults': 50
+        # 'order': 'date', # 최신 영상부터 가져오는 "date"
+        'maxResults': 50 # 각 구독채널에서 가져올 영상 개수
     }
 
     while True:
@@ -128,11 +133,12 @@ def get_channel_videos(channel_id):
         videos.append(video)
     return videos
 
-
+# 구독 채널 아이디와 아이콘 정보 저장 예: ["KBS뉴스", "kbs.icon이미지"]
 def get_video_info(channels, channel_icons):
     result = []
     for channel in zip(channels, channel_icons):
         channel_id = channel[0]
+        # 채널 id를 파라미터로 줘서, get channel videos 함수로 영상 정보 가져옴.
         videos = get_channel_videos(channel_id)
         for video in videos:
             video['channel_icon'] = channel[1]
@@ -154,31 +160,49 @@ with open('./data/subscriptions.json') as file:
 def home():  # put application's code here
     return 'YourTubeAPI_Subscription_Flask'
 
+# MongoDB setting
+mongo_uri = f"mongodb+srv://yourtube:ybigta@yourtube.earow10.mongodb.net/?retryWrites=true&w=majority&appName=YourTube"
+client = pymongo.MongoClient(mongo_uri)
+db = client.YourTube
+collection = db["Subscribed_Videos"]
 
-@app.route('/subscriptions', methods=['GET'])
+
+@app.route('/get_subscribed_videos', methods=['GET'])
 def subscriptions():
     try:
         subscriptions = get_subscriptions()
         print("get subscription done")
         channels = list(map(lambda channel: channel['channelId'], subscriptions))
         channel_icons = list(map(lambda channel: channel['thumbnail'], subscriptions))
+        # 구독 채널 정보는 영상 정보 가져오기 위해서만 쓰고, 영상 정보만 파일에 저장.
         videos = get_video_info(channels, channel_icons)
         print("get video info done")
 
-        # JSON 데이터를 파일로 저장
+        # JSON 데이터를 로컬 build 폴더에 저장
         file_path = os.path.expanduser('~/Desktop/Projects/YourTube_4_Service/Extension_UI/build/data/subscriptionVideos.json')
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(videos, f, ensure_ascii=False, indent=4)
             print("build folder saved")
 
-            # JSON 데이터를 두 번째 경로에 저장
+            # JSON 데이터를 로컬 public 폴더 경로에 저장
             file_path2 = os.path.expanduser(
                 '~/Desktop/Projects/YourTube_4_Service/Extension_UI/public/data/subscriptionVideos.json')
             os.makedirs(os.path.dirname(file_path2), exist_ok=True)
             with open(file_path2, 'w', encoding='utf-8') as f:
                 json.dump(videos, f, ensure_ascii=False, indent=4)
                 print("public folder saved")
+
+            # JSON 데이터 저장 세번째 경로 - MongoDB에 저장
+            # 모든 동영상 정보를 하나의 문서로 묶기
+            document_data = {
+                "userId": "Subscribed_Videos", # userId 사용자 고유 아이로 변
+                "videos": videos  # 여러 동영상 정보를 videos 필드에 배열로 저장
+            }
+
+            # collection.delete_many({})  # 기존 데이터를 삭제 (필요시) #사용자 별로 고유 아이디로 구분 필요...로그인을 만들어야하나...
+            collection.insert_one(document_data)  # 새로운 데이터 삽입/저장
+            print("MongoDB saved")
 
         return jsonify({
             "message": "result from flask",
@@ -188,6 +212,58 @@ def subscriptions():
     except Exception as e:
         print(f"Error: {e}")  # 서버 로그에 오류 메시지를 출력
         return jsonify({'error': str(e)}), 500
+
+
+# GCP - whole category model로 영상 카테고리 분류 요청
+@app.route('/classify_videos_big_cateogries', methods=['POST'])
+def classify_whole_categories():
+    print("request recieved")
+    # if request.method == 'OPTIONS':
+    #     # 프리플라이트 요청에 대한 응답을 수동으로 작성
+    #     response = jsonify({'status': 'CORS Preflight'})
+    #     response.headers.add("Access-Control-Allow-Origin", "*")
+    #     response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    #     response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    #     return response
+
+    # POST 요청에 대한 처리
+    try:
+        print("request recieved2")
+        # 클라이언트에서 전달받은 동영상 데이터, JSON
+        category_data = request.get_json()
+
+        # GCP 함수 URL
+        gcp_function_url = "https://asia-northeast3-yourtube-427304.cloudfunctions.net/whole-category-final"
+
+        # GCP 함수로 POST 요청 전송
+        gcp_response = requests.post(
+            gcp_function_url,
+            headers={
+                "Content-Type": "application/json"
+            },
+            data=json.dumps(category_data)  # 클라이언트에서 받은 JSON 데이터를 그대로 GCP로 전달
+        )
+
+        # 응답 데이터 확인 및 클라이언트로 반환
+        if gcp_response.status_code == 200:
+            response_data = gcp_response.json()  # GCP 함수의 응답을 JSON으로 변환
+            print(response_data)
+
+            # mongoDB에 분류된 영상 정보 저장
+            categorized_videos = {
+                "userId": "Categorized_Videos", # userId 사용자 고유 아이로 변경, 추후
+                "videos": videos  # 여러 동영상 정보를 videos 필드에 배열로 저장
+            }
+
+            collection.insert_one(categorized_videos)  # 새로운 데이터 삽입/저장
+            print("MongoDB saved")
+
+            return jsonify({"message": "Successfully classified videos", "categorized_data" : response_data}), 200  # GCP의 응답을 클라이언트로 반환
+        else:
+            return jsonify({"error": "Failed to classify videos"}), gcp_response.status_code
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # 예외 처리 후 클라이언트로 오류 응답
 
 
 if __name__ == '__main__':
