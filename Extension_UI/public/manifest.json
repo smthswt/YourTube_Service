@@ -24,9 +24,6 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting",
-    "http://localhost:5000/",
-    "https://*/*",
-    "http://*/*"
+    "scripting"
   ]
 }

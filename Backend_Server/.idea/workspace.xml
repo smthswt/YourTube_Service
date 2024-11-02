@@ -5,14 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d1b29a7b-4359-4f4a-9ebd-cf48a96e8984" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/subscriptions.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/subscriptions.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/videos.json" beforeDir="false" afterPath="$PROJECT_DIR$/videos.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/data/newvideos_final.json" beforeDir="false" afterPath="$PROJECT_DIR$/../newvideos_final.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" beforeDir="false" afterPath="$PROJECT_DIR$/../subscriptionVideos.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Extension_UI/public/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/manifest.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/contentscript.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/contentscript.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Extension_UI/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/src/App.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -72,7 +75,7 @@
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
-      <option name="SDK_NAME" value="Python 3.9 (Backend_Server)" />
+      <option name="SDK_NAME" value="Python 3.9" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -81,6 +84,14 @@
       <option name="launchJavascriptDebuger" value="false" />
       <method v="2" />
     </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-PY-241.14494.241" />
+        <option value="bundled-python-sdk-0509580d9d50-28c9f5db9ffe-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.14494.241" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -96,6 +107,8 @@
       <workItem from="1726927081838" duration="3568000" />
       <workItem from="1726934973312" duration="9687000" />
       <workItem from="1726946648945" duration="221000" />
+      <workItem from="1726948118513" duration="225000" />
+      <workItem from="1730441115630" duration="18194000" />
     </task>
     <servers />
   </component>

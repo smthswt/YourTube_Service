@@ -572,6 +572,7 @@ async function injectNewVideos() {
                 });
             });
             sampleData = response;
+            // 여기서 warning 뜨는데 왜지...기억이 안남 뭔 샘플임.
             console.log("Data: ", sampleData);
             updateCategories();
         } catch (error) {

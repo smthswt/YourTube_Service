@@ -21,29 +21,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //subscriptionVideos.json -> flask랑 연결된 파일명
 //newvideos.json
 // newvideos_final.json -> 임의로 넣어둔 것 gpt api로 카테고리 나눈 것.
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//     if (request.action === "fetchData") {
+//         fetch(chrome.runtime.getURL('data/subscriptionVideos.json'))
+//             .then(response => response.json())
+//             .then(data => sendResponse({ success: true, data: data }))
+//             .catch(error => sendResponse({ success: false, error: error }));
+//         return true; // Will respond asynchronously
+//     }
+// });
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "fetchData") {
-        fetch(chrome.runtime.getURL('data/subscriptionVideos.json'))
-            .then(response => response.json())
-            .then(data => sendResponse({ success: true, data: data }))
-            .catch(error => sendResponse({ success: false, error: error }));
+        // chrome.storage.local에서 subscribedVideos 데이터 가져오기
+        chrome.storage.local.get('subscribedVideos', (result) => {
+            if (chrome.runtime.lastError) {
+                // 오류가 있는 경우
+                sendResponse({ success: false, error: chrome.runtime.lastError });
+            } else if (result.subscribedVideos) {
+                // 데이터가 존재하는 경우
+                sendResponse({ success: true, data: result.subscribedVideos });
+            } else {
+                // 데이터가 없는 경우
+                sendResponse({ success: false, error: "No data found in storage" });
+            }
+        });
         return true; // Will respond asynchronously
     }
 });
 
-//
-// chrome.storage.onChanged.addListener((changes, namespace) => {
-//     for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-//         console.log(`Storage key "${key}" in namespace "${namespace}" changed.
-//                      Old value was "${oldValue}", new value is "${newValue}".`);
-//
-//         // If the change is relevant, notify the content script
-//         if (key === 'subCategories') {
-//             chrome.tabs.query({ url: "https://www.youtube.com/feed/subscriptions" }, (tabs) => {
-//                 tabs.forEach((tab) => {
-//                     chrome.tabs.sendMessage(tab.id, { action: 'updateCategories', data: newValue });
-//                 });
-//             });
-//         }
-//     }
-// });
+
