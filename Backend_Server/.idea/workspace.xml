@@ -5,18 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d1b29a7b-4359-4f4a-9ebd-cf48a96e8984" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/subscriptions.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/subscriptions.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/videos.json" beforeDir="false" afterPath="$PROJECT_DIR$/videos.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/data/newvideos_final.json" beforeDir="false" afterPath="$PROJECT_DIR$/../newvideos_final.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/data/subscriptionVideos.json" beforeDir="false" afterPath="$PROJECT_DIR$/../subscriptionVideos.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/background.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/public/scripts/contentscript.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/public/scripts/contentscript.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Extension_UI/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Extension_UI/src/App.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -109,6 +100,7 @@
       <workItem from="1726946648945" duration="221000" />
       <workItem from="1726948118513" duration="225000" />
       <workItem from="1730441115630" duration="18194000" />
+      <workItem from="1732179087605" duration="1391000" />
     </task>
     <servers />
   </component>

@@ -2,22 +2,42 @@
 
 let subCategories = {};  // subCategories 객체 정의
 
+
 async function injectNewVideos() {
-    var existingElement = document.querySelector('.style-scope ytd-rich-grid-renderer');
+    var existingElement = document.querySelector('#contents');
+
+    var liveElements = document.querySelectorAll('.yt-spec-avatar-shape__badge-text');
+    var channelElements = document.querySelectorAll('.style-scope.ytd-channel-name');
+    var buttonElement = document.querySelector('.button-container.style-scope.ytd-rich-shelf-renderer');
+
+    // 선택된 모든 요소 숨기기
+    channelElements.forEach((element) => {
+        element.style.display = 'none'; // 요소 숨기기
+        console.log(`${element.className} 요소가 숨겨졌습니다.`);
+    });
+
+    // 모든 선택된 요소를 숨기기
+    liveElements.forEach((element) => {
+        element.style.display = 'none'; // 요소 숨기기
+        console.log(`${element.className} 요소가 숨겨졌습니다.`);
+    });
+
+    // 요소 숨기기
+    if (buttonElement) {
+        buttonElement.style.display = 'none'; // 요소 숨기기
+        console.log('.yt-spec-touch-feedback-shape__fill 요소가 숨겨졌습니다.');
+    } else {
+        console.log('.yt-spec-touch-feedback-shape__fill 요소를 찾을 수 없습니다.');
+    }
 
     if (existingElement) {
-        // 기존 요소의 스타일 수정
+        // // 기존 요소의 스타일 수정
         existingElement.style.width = '98%'; // 가로 크기
         existingElement.style.height = '100%'; // 세로 크기
-        existingElement.style.backgroundColor = 'black'; // 배경색 검정으로 설정
-        existingElement.style.color = 'white'; // 텍스트 색상
-        existingElement.style.fontSize = '30px'; // 글씨 크기
+        existingElement.style.display = "none"; // 기존 요소 숨기기
         existingElement.style.display = 'block'; // 블록 레이아웃 사용
         existingElement.style.position = 'relative'; // 고정 위치 설정 해제
-        existingElement.style.border = '5px solid white'; // 흰색 테두리 설정
-        existingElement.style.zIndex = '1000'; // 다른 요소 위에 표시
-        existingElement.style.overflowY = 'auto'; // 세로 스크롤 가능하게 설정
-        existingElement.style.padding = '0px'; // 내부 패딩 추가
+        // // existingElement.style.border = '5px solid white'; // 흰색 테두리 설정
 
 
         const overlayContainer = document.createElement('div');
@@ -29,8 +49,7 @@ async function injectNewVideos() {
             width: 100%;
             height: 100%;
             justify-content: flex-start;
-            background: rgba(0, 0, 0, 1);  // 반투명 배경
-            // background: grey,
+            background: rgba(0, 0, 0, 1);  // 검정 배경
             z-index: 2147483647;  // 기존 요소 위에 오버레이되도록 설정
             overflow-y: auto;
             padding: 20px;
