@@ -20,6 +20,23 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
             setIsLoading(result.isLoading || false);
             setLastUpdatedTime(result.lastUpdatedTime || null);
         });
+
+        // Chrome Storage 변화 감지 이벤트 등록
+        const onStorageChange = (changes) => {
+            if (changes.isLoading) {
+                setIsLoading(changes.isLoading.newValue || false);
+            }
+            if (changes.lastUpdatedTime) {
+                setLastUpdatedTime(changes.lastUpdatedTime.newValue || null);
+            }
+        };
+
+        chrome.storage.onChanged.addListener(onStorageChange);
+
+        // Cleanup: 이벤트 리스너 제거
+        return () => {
+            chrome.storage.onChanged.removeListener(onStorageChange);
+        };
     }, []);
 
     const handleFetchSubscribedVideos = () => {
@@ -47,7 +64,6 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
                     마지막 업데이트:
                 </Typography>
                 <Typography fontSize={12}>
-                    {/*2024-06-07 14시 32분*/}
                     {lastUpdatedTime || "업데이트된 정보가 없습니다."}
                 </Typography>
             </Box>
@@ -55,7 +71,6 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
             <Box marginBottom={2}>
                 {isLoading ? (
                     <Button variant={"contained"}>
-                        {/*<CircularProgress indeterminate variant={"plain"} size={22} sx={{ color: '#ffffff' }}/>*/}
                         로딩 중...
                     </Button>
                 ) : (

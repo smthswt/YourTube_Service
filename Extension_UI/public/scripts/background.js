@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const now = new Date();
                 const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
                     now.getDate()
-                ).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}시 ${String(
+                ).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(
                     now.getMinutes()
                 ).padStart(2, '0')}분`;
 
@@ -77,6 +77,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         chrome.storage.local.remove("isLoading", () => {
                             console.log("로딩 상태 키 삭제 완료");
                             sendResponse({ success: true, data: data.videos, lastUpdatedTime: formattedDate });
+
+                            // 새로고침 실행
+                            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                                if (tabs[0]?.id) {
+                                    chrome.tabs.reload(tabs[0].id, { bypassCache: true }, () => {
+                                        console.log("탭 새로고침 완료");
+                                    });
+                                } else {
+                                    console.error("활성 탭을 찾을 수 없습니다.");
+                                }
+                            });
                         });
                     }
                 );
