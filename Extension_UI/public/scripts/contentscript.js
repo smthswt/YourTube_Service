@@ -10,25 +10,6 @@ async function injectNewVideos() {
     var channelElements = document.querySelectorAll('.style-scope.ytd-channel-name');
     var buttonElement = document.querySelector('.button-container.style-scope.ytd-rich-shelf-renderer');
 
-    // 선택된 모든 요소 숨기기
-    channelElements.forEach((element) => {
-        element.style.display = 'none'; // 요소 숨기기
-        console.log(`${element.className} 요소가 숨겨졌습니다.`);
-    });
-
-    // 모든 선택된 요소를 숨기기
-    liveElements.forEach((element) => {
-        element.style.display = 'none'; // 요소 숨기기
-        console.log(`${element.className} 요소가 숨겨졌습니다.`);
-    });
-
-    // 요소 숨기기
-    if (buttonElement) {
-        buttonElement.style.display = 'none'; // 요소 숨기기
-        console.log('.yt-spec-touch-feedback-shape__fill 요소가 숨겨졌습니다.');
-    } else {
-        console.log('.yt-spec-touch-feedback-shape__fill 요소를 찾을 수 없습니다.');
-    }
 
     if (existingElement) {
         // // 기존 요소의 스타일 수정
@@ -38,6 +19,26 @@ async function injectNewVideos() {
         existingElement.style.display = 'block'; // 블록 레이아웃 사용
         existingElement.style.position = 'relative'; // 고정 위치 설정 해제
         // // existingElement.style.border = '5px solid white'; // 흰색 테두리 설정
+
+        // 선택된 모든 요소 숨기기
+        channelElements.forEach((element) => {
+            element.style.display = 'none'; // 요소 숨기기
+            // console.log(`${element.className} 요소가 숨겨졌습니다.`);
+        });
+
+        // 모든 선택된 요소를 숨기기
+        liveElements.forEach((element) => {
+            element.style.display = 'none'; // 요소 숨기기
+            // console.log(`${element.className} 요소가 숨겨졌습니다.`);
+        });
+
+        // 요소 숨기기
+        if (buttonElement) {
+            buttonElement.style.display = 'none'; // 요소 숨기기
+            console.log('.yt-spec-touch-feedback-shape__fill 요소가 숨겨졌습니다.');
+        } else {
+            console.log('.yt-spec-touch-feedback-shape__fill 요소를 찾을 수 없습니다.');
+        }
 
 
         const overlayContainer = document.createElement('div');
@@ -129,7 +130,7 @@ async function injectNewVideos() {
         let selectedCategoryIndex = null;
         let selectedSubCategoryIndex = null;
         let displayedCategories = categoryList.slice(0, 16);
-        let sampleData = [];
+        let wholeData = [];
 
         function handleSubCategoryClick(index, subIndex, event) {
             if (selectedCategoryIndex === index && selectedSubCategoryIndex === subIndex) {
@@ -270,12 +271,12 @@ async function injectNewVideos() {
             if (selectedCategoryIndex !== null) {
                 const categoryKey = categoryKeys[selectedCategoryIndex];
                 if (categoryKey === "0") {
-                    filteredVideos = sampleData;  // 전체 카테고리의 경우 모든 비디오를 포함
+                    filteredVideos = wholeData;  // 전체 카테고리의 경우 모든 비디오를 포함
                 } else {
-                    filteredVideos = sampleData.filter(video => video.categoryId == categoryKey);
+                    filteredVideos = wholeData.filter(video => video.wholeCategoryId == categoryKey);
                 }
             } else {
-                filteredVideos = sampleData;
+                filteredVideos = wholeData;
             }
             filteredVideos = sortVideosByPublishDate(filteredVideos);
             displayFilteredVideos(filteredVideos, videoContainer);
@@ -590,9 +591,9 @@ async function injectNewVideos() {
                     }
                 });
             });
-            sampleData = response;
+            wholeData = response;
             // 여기서 warning 뜨는데 왜지...기억이 안남 뭔 샘플임.
-            console.log("Data: ", sampleData);
+            console.log("Data: ", wholeData);
             updateCategories();
         } catch (error) {
             console.error('Error fetching the sample data:', error);
@@ -821,6 +822,7 @@ async function injectNewVideos() {
     } else {
         console.error('기존 요소를 찾을 수 없습니다. 강력 새로고침 후 재실행합니다.');
         chrome.runtime.sendMessage({action: "forceReload"});
+        return;
     }
 }
 
