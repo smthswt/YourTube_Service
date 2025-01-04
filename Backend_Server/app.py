@@ -11,11 +11,13 @@ import webbrowser
 import feedparser
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import concurrent.futures
 
 app = Flask(__name__)
 # CORS(app)
 # CORS 설정 - 모든 경로에서 CORS 요청 허용
 CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 
 # Define the API credentials and scopes
@@ -100,37 +102,58 @@ def get_subscriptions():
 
     return result
 
-
-def get_channel_videos(channel_id):
+def get_channel_videos(channel_id, retries=3):
     feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    feed = feedparser.parse(feed_url)
 
-    videos = []
-    for entry in feed.entries:
-        video = {
-            'video_id': entry.yt_videoid,
-            'channel_id': entry.yt_channelid,
-            'title': entry.title,
-            'link': entry.link,
-            'ChannelTitle': entry.author,
-            'published': entry.published,
-            'description': entry.description,
-            'thumbnail': entry.media_thumbnail,
-            'views': entry.media_statistics['views'] if 'media_statistics' in entry else 'N/A'
-        }
-        videos.append(video)
-    return videos
+    for attempt in range(retries):
+        try:
+            feed = feedparser.parse(feed_url)
+            if feed.entries:
+                videos = []
+                for entry in feed.entries:
+                    video = {
+                        'video_id': entry.yt_videoid,
+                        'channel_id': entry.yt_channelid,
+                        'title': entry.title,
+                        'link': entry.link,
+                        'ChannelTitle': entry.author,
+                        'published': entry.published,
+                        'description': entry.description,
+                        'thumbnail': entry.media_thumbnail,
+                        'views': entry.media_statistics['views'] if 'media_statistics' in entry else 'N/A'
+                    }
+                    videos.append(video)
+                return videos
+            else:
+                raise Exception("No entries found in RSS feed")
+        except Exception as e:
+            print(f"Error fetching channel {channel_id}: {e}. Attempt {attempt + 1}/{retries}")
+            time.sleep(1)  # 잠시 대기 후 재시도
+    return []
 
-# 구독 채널 아이디와 아이콘 정보 저장 예: ["KBS뉴스", "kbs.icon이미지"]
+# 병렬 처리 코드
 def get_video_info(channels, channel_icons):
     result = []
-    for channel in zip(channels, channel_icons):
-        channel_id = channel[0]
-        # 채널 id를 파라미터로 줘서, get channel videos 함수로 영상 정보 가져옴.
-        videos = get_channel_videos(channel_id)
-        for video in videos:
-            video['channel_icon'] = channel[1]
-            result.append(video)
+
+    # ThreadPoolExecutor 생성 시 max_workers를 명시적으로 설정
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        # 각 채널에 대해 get_channel_videos를 병렬로 호출
+        future_to_channel = {
+            executor.submit(get_channel_videos, channel_id): (channel_id, icon)
+            for channel_id, icon in zip(channels, channel_icons)
+        }
+
+        for future in concurrent.futures.as_completed(future_to_channel):
+            channel_id, channel_icon = future_to_channel[future]
+            try:
+                videos = future.result()
+                # 각 비디오에 channel_icon 추가
+                for video in videos:
+                    video['channel_icon'] = channel_icon
+                    result.append(video)
+            except Exception as exc:
+                print(f"Error fetching videos for channel {channel_id}: {exc}")
+
     return result
 
 
@@ -146,7 +169,6 @@ limiter = Limiter(
 @limiter.limit("3 per minute")
 def home():
     return 'YourTube_Flask_Server'
-
 
 @app.route('/api/videos/subscribed', methods=['GET'])
 @limiter.limit("3 per minute")

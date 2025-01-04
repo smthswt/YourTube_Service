@@ -45,7 +45,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         chrome.storage.local.set({ isLoading: true });
 
-        fetch("http://ec2-13-124-209-211.ap-northeast-2.compute.amazonaws.com:8000/api/videos/subscribed", {
+        // 타임아웃 설정 (20초)
+        const fetchWithTimeout = (url, options, timeout = 20000) => {
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Request timed out")), timeout)
+                )
+            ]);
+        };
+
+        fetchWithTimeout("http://ec2-13-124-209-211.ap-northeast-2.compute.amazonaws.com:8000/api/videos/subscribed", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
