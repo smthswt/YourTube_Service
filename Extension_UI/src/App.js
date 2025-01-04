@@ -11,39 +11,6 @@ function App() {
     // const FLASK_API_URL = process.env.REACT_APP_FLASK_API_URL;
 
 
-    // 나의 구독 영상 요청 API -> 백그라운드로 코드 옮김
-  //   const handleRequestToFlaskForAPI = async () => {
-  //   console.log("Flask로 유튜브 구독 채널 목록 요청");
-  //
-  //   try {
-  //     const response = await fetch(`${FLASK_API_URL}/api/videos/subscribed`, {
-  //       method: "GET",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //     });
-  //
-  //     if (!response.ok) {
-  //       throw new Error('Network response was not ok');
-  //     }
-  //     const data = await response.json();
-  //     console.log("Response from Flask :", data)
-  //
-  //     // // 백그라운드 스크립트에 메시지 전송
-  //     // chrome.runtime.sendMessage({ action: "saveData", data: data });
-  //
-  //     // chrome storage에 data 저장
-  //     chrome.storage.local.set({ subscribedVideos: data.videos }, () => {
-  //       console.log('Data is saved to chrome.storage.local:', data.videos);
-  //
-  //     });
-  //
-  //   } catch (error) {
-  //     console.error('Failed to fetch:', error);
-  //   }
-  // };
-
-
     // gcp로 바로 요청하는 코드, api gateway로 보안/인증 기능 추가 필요
     const handleCategoryRequestToGCP = async (event) => {
         event.preventDefault();
@@ -70,7 +37,7 @@ function App() {
                     videos: formattedData
                 };
 
-                console.log("Data to be sent:", CategoryData);
+                console.log("GCP로 전달한 데이터 :", CategoryData);
 
                 try {
                     const gcpResponse = await fetch(GCP_FUNCTION_URL, {
@@ -86,10 +53,20 @@ function App() {
                     }
 
                     const responseData = await gcpResponse.json();
-                    console.log("Response from Cloud Function:", responseData);
+                    console.log("성공 Response from Cloud Function:", responseData);
                     // alert("Data sent to GCP successfully!");
 
+                    // chrome storage에 data 저장
+                    chrome.storage.local.set({ subscribedVideos: responseData.videos }, () => {
+                        console.log('Data is saved to chrome.storage.local:', responseData.videos);
 
+                        });
+
+                    // chrome.storage.local.set(
+                    // {
+                    //     subscribedVideos: data.videos,
+                    //     lastUpdatedTime: formattedDate,
+                    // },
 
                 } catch (error) {
                     console.error("Error sending data to Cloud Function:", error);
