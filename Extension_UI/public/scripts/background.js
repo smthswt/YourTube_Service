@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         chrome.storage.local.set({ isLoading: true });
 
-        fetch("http://localhost:8000/api/videos/subscribed", {
+        fetch("http://ec2-13-124-209-211.ap-northeast-2.compute.amazonaws.com:8000/api/videos/subscribed", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

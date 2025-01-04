@@ -1,11 +1,6 @@
-import pymongo
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
-import json
 import os
-import requests
-import google.auth.transport.requests
-import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
@@ -14,8 +9,6 @@ import threading
 from urllib.parse import parse_qs, urlparse
 import webbrowser
 import feedparser
-from dotenv import load_dotenv
-from pymongo import MongoClient
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -33,11 +26,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/youtubepartner"
 ]
 
-# .env 파일 활성화
-# load_dotenv()
-
 # Path to the client_secret.json file
-# CLIENT_SECRETS_FILE = os.getenv('API_KEY')
 CLIENT_SECRETS_FILE = 'client_secret.json'
 PORT = 3031
 
@@ -109,9 +98,6 @@ def get_subscriptions():
         else:
             params['pageToken'] = response['nextPageToken']
 
-    with open('./data/subscriptions.json', 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=2)
-
     return result
 
 
@@ -148,15 +134,6 @@ def get_video_info(channels, channel_icons):
     return result
 
 
-with open('./data/subscriptions.json') as file:
-    data = json.load(file)
-    channels = map(lambda channel: channel['channelId'], data)
-    channel_icons = map(lambda channel: channel['thumbnail'], data)
-    videos = get_video_info(channels, channel_icons)
-    with open('videos.json', 'w', encoding='utf-8') as file:
-        json.dump(videos, file, ensure_ascii=False, indent=4)
-
-
 # Limiter 초기화
 limiter = Limiter(
     get_remote_address,
@@ -169,12 +146,6 @@ limiter = Limiter(
 @limiter.limit("3 per minute")
 def home():
     return 'YourTube_Flask_Server'
-
-# MongoDB setting
-# mongo_uri = f"mongodb+srv://yourtube:ybigta@yourtube.earow10.mongodb.net/?retryWrites=true&w=majority&appName=YourTube"
-# client = pymongo.MongoClient(mongo_uri)
-# db = client.YourTube
-# collection = db["Subscribed_Videos"]
 
 
 @app.route('/api/videos/subscribed', methods=['GET'])
@@ -206,21 +177,4 @@ def subscriptions():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
-    app.run(debug=True, host='0.0.0.0', port=port)
-
-
-# 기존 가상 환경 삭제
-# rm -rf venv
-#가상환경 생성
-# python3 -m venv venv
-#가상환경 활성화
-# source venv/bin/activate
-#필요한 패키지 설치 명령어 (선택)
-# pip install -r requirements.txt
-# 서버 실행 명령어
-# python app.py
-
-
-# pip 문제 있을때
-# python3 -m ensurepip --upgrade
-# pip install --upgrade pip
+    app.run(host='0.0.0.0', port=port)
