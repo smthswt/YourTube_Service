@@ -85,7 +85,7 @@ async function injectNewVideos() {
         categoryContainer.style = `
             display: flex;
             flex-wrap: wrap;
-            width: 90%;
+            width: 88%;
         `;
 
         const settingsContainer = document.createElement('div');
