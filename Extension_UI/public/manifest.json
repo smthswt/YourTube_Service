@@ -2,10 +2,12 @@
   "name": "YourTube",
   "description": "YOUtube algoRithm TUning Browser Extension",
   "manifest_version": 3,
-  "version": "1.0.0",
+  "version": "1.0.6",
   "icons": {
-    "48": "images/youtube-48.png",
-    "128": "images/youtube-128.png"
+    "16": "images/YourTube_logo_16.png",
+    "32": "images/YourTube_logo_32.png",
+    "48": "images/YourTube_logo_48.png",
+    "128": "images/YourTube_logo_128.png"
   },
   "background": {
 	"service_worker": "scripts/background.js"
@@ -21,7 +23,6 @@
   },
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "tabs"
   ]
 }
