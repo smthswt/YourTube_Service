@@ -79,10 +79,19 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
                     </Button>
                 )}
             </Box>
-            <Box marginBottom={2}>
+            <Box marginBottom={1.5}>
                 <Button variant={"contained"} onClick={handleCategoryRequest}>
                     카테고리 분류
                 </Button>
+            </Box>
+            <Box marginBottom={1.5}>
+                <Typography sx={{fontSize: 12, color: "grey", textDecoration: "underline"}} display={'inline'}
+                component="a"
+                href="https://yourtube.shop"
+                target="_blank"
+                rel="noopener noreferrer">
+                    사용 방법 & 후원
+                </Typography>
             </Box>
         </>
     )

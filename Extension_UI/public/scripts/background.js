@@ -55,7 +55,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             ]);
         };
 
-        fetchWithTimeout("http://localhost:8000/api/videos/subscribed", {
+        fetchWithTimeout("https://yourtube.store/api/videos/subscribed", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
