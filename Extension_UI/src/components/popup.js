@@ -87,7 +87,7 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
             <Box marginBottom={1.5}>
                 <Typography sx={{fontSize: 12, color: "grey", textDecoration: "underline"}} display={'inline'}
                 component="a"
-                href="https://yourtube.shop"
+                href="https://yourtube.my"
                 target="_blank"
                 rel="noopener noreferrer">
                     사용 방법 & 후원

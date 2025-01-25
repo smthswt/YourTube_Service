@@ -19,7 +19,7 @@ app = Flask(__name__)
 # CORS 설정 - 모든 경로에서 CORS 요청 허용
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-
+print()
 
 # Define the API credentials and scopes
 SCOPES = [

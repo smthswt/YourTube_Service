@@ -4,11 +4,11 @@ let subCategories = {};  // subCategories 객체 정의
 
 
 async function injectNewVideos() {
-    var existingElement = document.querySelector('#contents');
+    const existingElement = document.querySelector('#contents');
 
-    var liveElements = document.querySelectorAll('.yt-spec-avatar-shape__badge-text');
-    var channelElements = document.querySelectorAll('.style-scope.ytd-channel-name');
-    var buttonElement = document.querySelector('.button-container.style-scope.ytd-rich-shelf-renderer');
+    const liveElements = document.querySelectorAll('.yt-spec-avatar-shape__badge-text');
+    const channelElements = document.querySelectorAll('.style-scope.ytd-channel-name');
+    const buttonElement = document.querySelector('.button-container.style-scope.ytd-rich-shelf-renderer');
 
 
     if (existingElement) {
@@ -21,13 +21,7 @@ async function injectNewVideos() {
         // // existingElement.style.border = '5px solid white'; // 흰색 테두리 설정
 
         // 선택된 모든 요소 숨기기
-        channelElements.forEach((element) => {
-            element.style.display = 'none'; // 요소 숨기기
-            // console.log(`${element.className} 요소가 숨겨졌습니다.`);
-        });
-
-        // 모든 선택된 요소를 숨기기
-        liveElements.forEach((element) => {
+        [...channelElements, ...liveElements].forEach((element) => {
             element.style.display = 'none'; // 요소 숨기기
             // console.log(`${element.className} 요소가 숨겨졌습니다.`);
         });
@@ -40,6 +34,14 @@ async function injectNewVideos() {
             console.log('.yt-spec-touch-feedback-shape__fill 요소를 찾을 수 없습니다.');
         }
 
+        const defaultBackgroundColor = '#0F0F0F'; // 기본 배경색
+        const whiteBackgroundColor = '#FFFFFF'; // 흰색 배경
+        const defaultTextColor = '#EFEFEF'; // 기본 텍스트 색상
+        const blackTextColor = '#0F0F0F'; // 검정 텍스트 색상
+
+        // 초기 테마 상태 로드
+        let isWhiteTheme = localStorage.getItem('isWhiteTheme') === 'true';
+        console.log("초기 테마 색상 {isWhiteTheme}");
 
         const overlayContainer = document.createElement('div');
         overlayContainer.className = 'overlay-container';
@@ -50,7 +52,7 @@ async function injectNewVideos() {
             width: 100%;
             height: 100%;
             justify-content: flex-start;
-            background: rgba(0, 0, 0, 1);  // 검정 배경
+            background: ${isWhiteTheme ? whiteBackgroundColor : defaultBackgroundColor};  // 테마에 따라 배경 색상 설정
             z-index: 2147483647;  // 기존 요소 위에 오버레이되도록 설정
             overflow-y: auto;
             padding: 20px;
@@ -129,7 +131,8 @@ async function injectNewVideos() {
         const categoryKeys = Object.keys(categoryMapping);
         let selectedCategoryIndex = null;
         let selectedSubCategoryIndex = null;
-        let displayedCategories = categoryList.slice(0, 16);
+        //초기 상태 로드
+        let displayedCategories = JSON.parse(localStorage.getItem('displayedCategories'))
         let wholeData = [];
 
         function handleSubCategoryClick(index, subIndex, event) {
@@ -181,8 +184,24 @@ async function injectNewVideos() {
 
                 const categoryBox = document.createElement('div');
                 categoryBox.style = `
-                    background-color: ${selectedCategoryIndex === index ? "#F1F1F1" : "#282828"};
-                    color: ${selectedCategoryIndex === index ? "#0F0F0F" : "#EFEFEF"};
+                    background-color: ${
+                                    isWhiteTheme
+                                        ? selectedCategoryIndex === index
+                                            ? "#0F0F0F" // 흰색 테마에서 선택된 상태
+                                            : "#F2F2F2" // 흰색 테마에서 선택되지 않은 상태
+                                        : selectedCategoryIndex === index
+                                            ? "#F1F1F1" // 검정 테마에서 선택된 상태
+                                            : "#282828" // 검정 테마에서 선택되지 않은 상태
+                                };
+                    color: ${
+                                    isWhiteTheme
+                                        ? selectedCategoryIndex === index
+                                            ? "#F2F2F2" // 흰색 테마에서 선택된 상태
+                                            : "#0F0F0F" // 흰색 테마에서 선택되지 않은 상태
+                                        : selectedCategoryIndex === index
+                                            ? "#0F0F0F" // 검정 테마에서 선택된 상태
+                                            : "#EFEFEF" // 검정 테마에서 선택되지 않은 상태
+                                };
                     padding: 0.7rem 1.7rem;
                     border-radius: 0.5rem;
                     display: flex;
@@ -193,6 +212,7 @@ async function injectNewVideos() {
                     user-select: none;
                     font-size: 14px;
                 `;
+
                 categoryBox.textContent = category;
                 categoryBox.addEventListener('click', (event) => handleClick(index, event));
                 categoryBoxContainer.appendChild(categoryBox);
@@ -282,9 +302,21 @@ async function injectNewVideos() {
             displayFilteredVideos(filteredVideos, videoContainer);
         }
 
+        // 설정 컨테이너 스타일 수정
+        settingsContainer.style = `
+            display: flex;
+            flex-direction: column;  // 세로 방향으로 배치
+            align-items: flex-start;  // 좌측 정렬
+            margin-left: auto;
+            margin-right: 0.5rem;
+            padding-top: 0.7rem;
+            gap: 15px;  // 요소 간 간격 추가
+        `;
+
+        // 카테고리 설정 텍스트 추가
         const categorySettings = document.createElement('div');
         categorySettings.style = `
-            color: #EFEFEF;
+            color: ${isWhiteTheme ? blackTextColor : defaultTextColor};
             font-size: 14px;
             cursor: pointer;
             user-select: none;
@@ -292,6 +324,37 @@ async function injectNewVideos() {
         categorySettings.textContent = "카테고리 설정 >";
         categorySettings.addEventListener('click', openCategorySettingsPopup);
         settingsContainer.appendChild(categorySettings);
+
+        // 테마 색상 텍스트 추가
+        const themeColor = document.createElement('div');
+        themeColor.style = `
+            color: ${isWhiteTheme ? blackTextColor : defaultTextColor};
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        `;
+        themeColor.textContent = "테마 색상";
+        settingsContainer.appendChild(themeColor);
+
+        // 테마 색상 변경 이벤트 추가
+        themeColor.addEventListener('click', () => {
+            if (isWhiteTheme) {
+                // 기본 테마로 변경
+                overlayContainer.style.background = defaultBackgroundColor;
+                categorySettings.style.color = defaultTextColor;
+                themeColor.style.color = defaultTextColor;
+                isWhiteTheme = false;
+            } else {
+                // 흰색 테마로 변경
+                overlayContainer.style.background = whiteBackgroundColor;
+                categorySettings.style.color = blackTextColor;
+                themeColor.style.color = blackTextColor;
+                isWhiteTheme = true;
+            }
+            // 변경된 테마 상태를 로컬 스토리지에 저장
+            localStorage.setItem('isWhiteTheme', isWhiteTheme.toString());
+            updateCategories(); // 테마 변경 후 카테고리 업데이트
+        });
 
         headerContainer.appendChild(categoryContainer);
         headerContainer.appendChild(settingsContainer);
@@ -329,21 +392,21 @@ async function injectNewVideos() {
                 margin-bottom: 15px;
             `;
 
-            categoryList.forEach((category, index) => {
-                const checkboxLabel = document.createElement('label');
-                checkboxLabel.style = `
-                    display: flex;
-                    align-items: center;
-                    font-size: 14px;
-                `;
+            categoryList.forEach(category => {
+                const label = document.createElement('label');
+                label.style = `display: flex; align-items: center;`;
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.value = category;
                 checkbox.checked = displayedCategories.includes(category);
-                checkbox.addEventListener('change', () => handleCheckboxChange(index, checkbox.checked));
-                checkboxLabel.appendChild(checkbox);
-                checkboxLabel.appendChild(document.createTextNode(category));
-                checkboxContainer.appendChild(checkboxLabel);
+                checkbox.addEventListener('change', (event) => {
+                    const isChecked = event.target.checked;
+                    handleCheckboxChange(categoryList.indexOf(category), isChecked);
+                });
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(category));
+                checkboxContainer.appendChild(label);
             });
             popup.appendChild(checkboxContainer);
 
@@ -399,7 +462,15 @@ async function injectNewVideos() {
             } else {
                 displayedCategories = displayedCategories.filter(cat => cat !== category);
             }
+
+            // 정렬하여 순서 유지
+            displayedCategories.sort((a, b) => categoryList.indexOf(a) - categoryList.indexOf(b));
+            // 로컬 스토리지에 저장
+            localStorage.setItem('displayedCategories', JSON.stringify(displayedCategories));
+            // UI 업데이트
+            updateCategories();
         }
+
 
         function openNewCategoryPopup(index) {
             const popup = document.createElement('div');
