@@ -2,7 +2,6 @@
 
 let subCategories = {};  // subCategories 객체 정의
 
-
 async function injectNewVideos() {
     const existingElement = document.querySelector('#contents');
 
@@ -10,6 +9,7 @@ async function injectNewVideos() {
     const channelElements = document.querySelectorAll('.style-scope.ytd-channel-name');
     const buttonElement = document.querySelector('.button-container.style-scope.ytd-rich-shelf-renderer');
 
+    console.log("✅ injectNewVideos 실행됨!");
 
     if (existingElement) {
         // // 기존 요소의 스타일 수정
@@ -161,14 +161,18 @@ async function injectNewVideos() {
         }
 
         function displayFilteredVideos(videos, container) {
+            console.log("🛠 Rendering videos:", videos);
             container.innerHTML = '';
+
             videos.forEach(videoData => {
+                console.log("🎬 Processing videoData:", videoData);
                 const videoBox = createYoutubeBox(videoData);
                 container.appendChild(videoBox);
             });
         }
 
         function updateCategories(event) {
+            console.log("✅ updateCategories 실행됨!", event);
             categoryContainer.innerHTML = '';
 
             displayedCategories.forEach((category, index) => {
@@ -299,6 +303,7 @@ async function injectNewVideos() {
                 filteredVideos = wholeData;
             }
             filteredVideos = sortVideosByPublishDate(filteredVideos);
+            console.log("📌 전달되는 filteredVideos:", filteredVideos);
             displayFilteredVideos(filteredVideos, videoContainer);
         }
 
@@ -662,9 +667,9 @@ async function injectNewVideos() {
                     }
                 });
             });
+            console.log("🔹 Whole data received:", response);
             wholeData = response;
             // 여기서 warning 뜨는데 왜지...기억이 안남 뭔 샘플임.
-            console.log("Data: ", wholeData);
             updateCategories();
         } catch (error) {
             console.error('Error fetching the sample data:', error);
@@ -702,8 +707,13 @@ async function injectNewVideos() {
         }
 
         function createYoutubeBox(videoData) {
+            console.log("📌 Checking videoData:", videoData);
+
             const videoId = videoData.video_id;
-            const thumbnail = videoData.thumbnail[0].url;
+            // const thumbnail = videoData.thumbnail[0].url; //배열이라 객체때 에러남
+            const thumbnail = Array.isArray(videoData.thumbnail)
+                ? (videoData.thumbnail.length > 0 ? videoData.thumbnail[0].url : "https://via.placeholder.com/480x360?text=No+Thumbnail")
+                : (videoData.thumbnail && videoData.thumbnail.url ? videoData.thumbnail.url : "https://via.placeholder.com/480x360?text=No+Thumbnail");
             let videoTitle = videoData.title;
             const channelName = videoData.ChannelTitle;
             const publishTime = videoData.published;
@@ -897,5 +907,11 @@ async function injectNewVideos() {
     }
 }
 
-// 함수 호출
-injectNewVideos();
+// // 함수 호출
+// injectNewVideos();
+
+// DOM이 완전히 로드된 후 실행
+window.onload = function () {
+    console.log("✅ Window Loaded, Executing injectNewVideos()");
+    injectNewVideos();
+};
