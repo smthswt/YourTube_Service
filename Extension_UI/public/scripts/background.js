@@ -20,6 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // 로컬 스토리지에 있는 영상 시각화
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("📩 메시지 수신:", request);
+
     if (request.action === "fetchData") {
         // chrome.storage.local에서 subscribedVideos 데이터 가져오기
         chrome.storage.local.get('subscribedVideos', (result) => {
@@ -46,7 +48,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.storage.local.set({ isLoading: true });
 
         // 타임아웃 설정 (20초)
-        const fetchWithTimeout = (url, options, timeout = 20000) => {
+        const fetchWithTimeout = (url, options, timeout = 30000) => {
             return Promise.race([
                 fetch(url, options),
                 new Promise((_, reject) =>
@@ -55,7 +57,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             ]);
         };
 
-        fetchWithTimeout("https://yourtube.store/api/videos/subscribed", {
+        fetchWithTimeout("http://localhost:8000/api/videos/subscribed", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -112,5 +114,103 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
 
         return true; // 비동기 응답을 보장
+    }
+});
+
+const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
+
+// 🔴 전송 중단을 위한 AbortController
+let abortController = new AbortController();
+
+// ✅ GCP로 데이터 전송 (카테고리 분류 요청)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "sendToGCP") {
+        console.log("📡 GCP 카테고리 분류 요청 시작");
+
+        abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)
+        chrome.storage.local.set({ GCPisLoading: true });
+
+        chrome.storage.local.get("subscribedVideos", async (result) => {
+            if (!result.subscribedVideos || result.subscribedVideos.length === 0) {
+                console.error("❌ 저장된 데이터 없음");
+                chrome.storage.local.remove("GCPisLoading");
+                sendResponse({ success: false, error: "No data found" });
+                return;
+            }
+
+            const formattedData = result.subscribedVideos.map(video => ({
+                ...video,
+                thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail
+            }));
+
+            const CHUNK_SIZE = 50;
+            const videoChunks = [];
+            for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {
+                videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));
+            }
+
+            console.log(`🚀 총 ${videoChunks.length}개의 배치 전송`);
+
+            let allResults = [];
+
+            for (const [index, chunk] of videoChunks.entries()) {
+                console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
+
+                try {
+                    if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
+
+                    const response = await fetch(GCP_CLOUD_RUN_URL, {
+                        method: 'POST',
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: "Subscribed_Videos", videos: chunk }),
+                        signal: abortController.signal // 📌 AbortController 적용
+                    });
+
+                    if (!response.ok) throw new Error(`🚨 배치 ${index + 1} 전송 실패`);
+
+                    const responseData = await response.json();
+                    console.log(`Batch ${index + 1} Response:`, responseData);
+                    allResults = allResults.concat(responseData.videos);
+
+                } catch (error) {
+                    if (error.name === "AbortError") {
+                        console.warn("🛑 요청이 중단되었습니다.");
+                        chrome.storage.local.remove("GCPisLoading");
+                        return;
+                    } else {
+                        console.error(`❌ 배치 ${index + 1} 실패:`, error);
+                    }
+                }
+            }
+
+            const now = new Date();
+            const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
+
+            chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {
+                console.log("✅ 데이터 저장 완료");
+                console.log("전체 데이터 : ", allResults);
+                console.log("저장 시각 : ", formattedDate);
+
+                chrome.storage.local.remove("GCPisLoading", () => {
+                    console.log("🟢 GCPisLoading 제거 완료");
+
+                    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                        if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
+                    });
+
+                    sendResponse({ success: true, lastUpdatedTime: formattedDate });
+                });
+            });
+        });
+
+        return true;
+    }
+
+    // 🛑 요청 중단 기능 추가
+    if (message.action === "cancelGCP") {
+        console.log("🛑 GCP 데이터 전송 요청 취소");
+        abortController.abort(); // 현재 진행 중인 요청 중단
+        chrome.storage.local.remove("GCPisLoading"); // UI 상태 해제
+        sendResponse({ success: true, message: "GCP 요청 중단됨" });
     }
 });

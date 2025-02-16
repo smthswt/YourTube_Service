@@ -19,8 +19,6 @@ app = Flask(__name__)
 # CORS 설정 - 모든 경로에서 CORS 요청 허용
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-print()
-
 # Define the API credentials and scopes
 SCOPES = [
     "https://www.googleapis.com/auth/youtube",
@@ -171,7 +169,7 @@ limiter = Limiter(
 def home():
     return 'YourTube_Flask_Server'
 
-@app.route('/api/videos/subscribed', methods=['GET'])
+@app.route('/api/videos/subscribed', methods=['GET', 'OPTIONS'])
 @limiter.limit("3 per minute")
 def subscriptions():
     try:
@@ -192,7 +190,8 @@ def subscriptions():
             "message": "result from flask",
             "subscriptions": subscriptions,
             "videos": videos
-        })
+        }), 200, {"Content-Type": "application/json; charset=utf-8"}
+
     except Exception as e:
         print(f"Error: {e}")  # 서버 로그에 오류 메시지를 출력
         return jsonify({'error': str(e)}), 500
@@ -201,3 +200,5 @@ def subscriptions():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)
+
+#pip install -r requirements.txt
