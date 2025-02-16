@@ -15,34 +15,6 @@ const Popup = ({}) => {
     const [gcpIsLoading, setGcpIsLoading] = useState(false); //GCP 통한 카테고리 추가 영상 로딩
     const [lastUpdatedTime, setLastUpdatedTime] = useState(null);
 
-    // const GCP_CLOUD_RUN_URL = process.env.REACT_APP_GCP_CLOUD_RUN_URL;
-    // console.log("🔗 GCP_CLOUD_RUN_URL:", GCP_CLOUD_RUN_URL);
-
-    // // 초기화: 로컬 스토리지에서 로딩 상태 및 업데이트 시간 가져오기
-    // useEffect(() => {
-    //     chrome.storage.local.get(["isLoading", "lastUpdatedTime"], (result) => {
-    //         setIsLoading(result.isLoading || false);
-    //         setLastUpdatedTime(result.lastUpdatedTime || null);
-    //     });
-    //
-    //     // Chrome Storage 변화 감지 이벤트 등록
-    //     const onStorageChange = (changes) => {
-    //         if (changes.isLoading) {
-    //             setIsLoading(changes.isLoading.newValue || false);
-    //         }
-    //         if (changes.lastUpdatedTime) {
-    //             setLastUpdatedTime(changes.lastUpdatedTime.newValue || null);
-    //         }
-    //     };
-    //
-    //     chrome.storage.onChanged.addListener(onStorageChange);
-    //
-    //     // Cleanup: 이벤트 리스너 제거
-    //     return () => {
-    //         chrome.storage.onChanged.removeListener(onStorageChange);
-    //     };
-    // }, []);
-
     // 초기화: 로컬 스토리지에서 로딩 상태 및 업데이트 시간 가져오기
     useEffect(() => {
         chrome.storage.local.get(["isLoading", "GCPisLoading", "lastUpdatedTime"], (result) => {
@@ -134,11 +106,6 @@ const Popup = ({}) => {
                     </Button>
                 )}
             </Box>
-            {/*<Box marginBottom={1.5}>*/}
-            {/*    <Button variant={"contained"} onClick={handleCategoryRequest}>*/}
-            {/*        카테고리 분류*/}
-            {/*    </Button>*/}
-            {/*</Box>*/}
             <Box marginBottom={1.5}>
                 {gcpIsLoading ? (
                     <Button variant={"contained"} onClick={handleCancelRequest}>
