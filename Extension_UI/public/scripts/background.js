@@ -62,63 +62,47 @@ const authenticateAndFetchVideos = () => {
     })
         .then((response) => {
             if (response.status === 401) {
-                console.warn("⚠️ 인증이 필요합니다. OAuth를 실행합니다.");
+                console.warn("⚠️ 인증이 필요합니다. OAuth 실행 중...");
 
                 if (!isAuthenticating) {
                     isAuthenticating = true;
-                    fetchOAuthUrl(); // OAuth 인증 실행
+                    fetchOAuthUrl()
+                        .then(() => {
+                            console.log("✅ OAuth 인증 완료, 다시 fetchVideos 실행");
+                            authenticateAndFetchVideos(); // 인증 후 재요청
+                        })
+                        .catch((err) => console.error("❌ OAuth 실패:", err))
+                        .finally(() => (isAuthenticating = false));
+
+                    return null; // 이후 코드 실행 방지
                 }
-                return;
-            }
-            if (!response.ok) {
-                throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);
             }
             return response.json();
         })
         .then((data) => {
-            if (data && data.videos) {
+            if (!data) return;
+            if (data.videos) {
                 const now = new Date();
-                const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-                    now.getDate()
-                ).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(
-                    now.getMinutes()
-                ).padStart(2, '0')}분`;
+                const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
 
                 chrome.storage.local.set(
                     { subscribedVideos: data.videos, lastUpdatedTime: formattedDate },
                     () => {
                         console.log("✅ 비디오 데이터 저장 완료:", data.videos);
-                        console.log("✅ 업데이트 시각 저장 완료:", formattedDate);
-
-                        // ✅ 로딩 상태 해제
-                        chrome.storage.local.remove("isLoading", () => {
-                            console.log("✅ 로딩 상태 키 삭제 완료");
-
-                            // 🔄 새로고침 실행
-                            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                                if (tabs[0]?.id) {
-                                    chrome.tabs.reload(tabs[0].id, { bypassCache: true }, () => {
-                                        console.log("🔄 탭 새로고침 완료");
-                                    });
-                                } else {
-                                    console.error("❌ 활성 탭을 찾을 수 없습니다.");
-                                }
-                            });
+                        chrome.storage.local.remove("isLoading");
+                        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                            if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
                         });
                     }
                 );
             } else {
                 console.error("❌ 비디오 데이터 없음:", data);
-                chrome.storage.local.remove("isLoading", () => {
-                    console.log("✅ 로딩 상태 키 삭제 완료");
-                });
+                chrome.storage.local.remove("isLoading");
             }
         })
         .catch((error) => {
             console.error("❌ 비디오 데이터 가져오기 실패:", error.message);
-            chrome.storage.local.remove("isLoading", () => {
-                console.log("✅ 로딩 상태 키 삭제 완료");
-            });
+            chrome.storage.local.remove("isLoading");
         });
 };
 
@@ -126,49 +110,35 @@ const authenticateAndFetchVideos = () => {
 const fetchOAuthUrl = () => {
     console.log("🔑 fetchOAuthUrl() 실행 중...");
 
-    fetchWithTimeout("https://yourtube.store/api/videos/subscribed", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => {
-            if (response.status === 401) {
-                return response.json(); // 다음 then에서 authorization_url 처리
-            }
-            if (!response.ok) {
-                throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);
-            }
-            return response.json();
+    return new Promise((resolve, reject) => {
+        fetchWithTimeout("https://yourtube.store/api/videos/subscribed", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
         })
-        .then((data) => {
-            if (data.authorization_url) {
+            .then((response) => {
+                if (response.status === 401) return response.json();
+                throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);
+            })
+            .then((data) => {
+                if (!data.authorization_url) throw new Error("❌ Authorization URL이 응답에 포함되지 않음");
+
                 console.log("🔑 OAuth 인증 URL:", data.authorization_url);
                 chrome.tabs.create({ url: data.authorization_url }, (tab) => {
                     if (chrome.runtime.lastError) {
-                        console.error("❌ Google 인증 창 열기 실패:", chrome.runtime.lastError);
+                        reject("❌ Google 인증 창 열기 실패: " + chrome.runtime.lastError);
                     } else {
                         console.log("✅ Google 인증 창 열림:", tab);
 
                         // ✅ 인증 후 자동으로 fetchVideos 실행
                         setTimeout(() => {
                             console.log("🔄 OAuth 인증 후 비디오 가져오기 실행...");
-                            authenticateAndFetchVideos();
-                            isAuthenticating = false;
+                            resolve(); // 인증 완료 신호
                         }, 5000);
                     }
                 });
-            } else {
-                throw new Error("❌ Authorization URL이 응답에 포함되지 않았습니다.");
-            }
-        })
-        .catch((error) => {
-            console.error("❌ OAuth 프로세스 실패:", error.message);
-            chrome.storage.local.remove("isLoading", () => {
-                console.log("✅ 로딩 상태 키 삭제 완료");
-            });
-            isAuthenticating = false;
-        });
+            })
+            .catch(reject);
+    });
 };
 
 // ✅ 타임아웃 함수
@@ -188,100 +158,100 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
+// const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
 
-// 🔴 전송 중단을 위한 AbortController
-let abortController = new AbortController();
+// // 🔴 전송 중단을 위한 AbortController
+// let abortController = new AbortController();
 
-// ✅ GCP로 데이터 전송 (카테고리 분류 요청)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "sendToGCP") {
-        console.log("📡 GCP 카테고리 분류 요청 시작");
+// // ✅ GCP로 데이터 전송 (카테고리 분류 요청)
+// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+//     if (message.action === "sendToGCP") {
+//         console.log("📡 GCP 카테고리 분류 요청 시작");
 
-        abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)
-        chrome.storage.local.set({ GCPisLoading: true });
+//         abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)
+//         chrome.storage.local.set({ GCPisLoading: true });
 
-        chrome.storage.local.get("subscribedVideos", async (result) => {
-            if (!result.subscribedVideos || result.subscribedVideos.length === 0) {
-                console.error("❌ 저장된 데이터 없음");
-                chrome.storage.local.remove("GCPisLoading");
-                sendResponse({ success: false, error: "No data found" });
-                return;
-            }
+//         chrome.storage.local.get("subscribedVideos", async (result) => {
+//             if (!result.subscribedVideos || result.subscribedVideos.length === 0) {
+//                 console.error("❌ 저장된 데이터 없음");
+//                 chrome.storage.local.remove("GCPisLoading");
+//                 sendResponse({ success: false, error: "No data found" });
+//                 return;
+//             }
 
-            const formattedData = result.subscribedVideos.map(video => ({
-                ...video,
-                thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail
-            }));
+//             const formattedData = result.subscribedVideos.map(video => ({
+//                 ...video,
+//                 thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail
+//             }));
 
-            const CHUNK_SIZE = 50;
-            const videoChunks = [];
-            for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {
-                videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));
-            }
+//             const CHUNK_SIZE = 50;
+//             const videoChunks = [];
+//             for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {
+//                 videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));
+//             }
 
-            console.log(`🚀 총 ${videoChunks.length}개의 배치 전송`);
+//             console.log(`🚀 총 ${videoChunks.length}개의 배치 전송`);
 
-            let allResults = [];
+//             let allResults = [];
 
-            for (const [index, chunk] of videoChunks.entries()) {
-                console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
+//             for (const [index, chunk] of videoChunks.entries()) {
+//                 console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
 
-                try {
-                    if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
+//                 try {
+//                     if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
 
-                    const response = await fetch(GCP_CLOUD_RUN_URL, {
-                        method: 'POST',
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: "Subscribed_Videos", videos: chunk }),
-                        signal: abortController.signal // 📌 AbortController 적용
-                    });
+//                     const response = await fetch(GCP_CLOUD_RUN_URL, {
+//                         method: 'POST',
+//                         headers: { "Content-Type": "application/json" },
+//                         body: JSON.stringify({ userId: "Subscribed_Videos", videos: chunk }),
+//                         signal: abortController.signal // 📌 AbortController 적용
+//                     });
 
-                    if (!response.ok) throw new Error(`🚨 배치 ${index + 1} 전송 실패`);
+//                     if (!response.ok) throw new Error(`🚨 배치 ${index + 1} 전송 실패`);
 
-                    const responseData = await response.json();
-                    console.log(`Batch ${index + 1} Response:`, responseData);
-                    allResults = allResults.concat(responseData.videos);
+//                     const responseData = await response.json();
+//                     console.log(`Batch ${index + 1} Response:`, responseData);
+//                     allResults = allResults.concat(responseData.videos);
 
-                } catch (error) {
-                    if (error.name === "AbortError") {
-                        console.warn("🛑 요청이 중단되었습니다.");
-                        chrome.storage.local.remove("GCPisLoading");
-                        return;
-                    } else {
-                        console.error(`❌ 배치 ${index + 1} 실패:`, error);
-                    }
-                }
-            }
+//                 } catch (error) {
+//                     if (error.name === "AbortError") {
+//                         console.warn("🛑 요청이 중단되었습니다.");
+//                         chrome.storage.local.remove("GCPisLoading");
+//                         return;
+//                     } else {
+//                         console.error(`❌ 배치 ${index + 1} 실패:`, error);
+//                     }
+//                 }
+//             }
 
-            const now = new Date();
-            const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
+//             const now = new Date();
+//             const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
 
-            chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {
-                console.log("✅ 데이터 저장 완료");
-                console.log("전체 데이터 : ", allResults);
-                console.log("저장 시각 : ", formattedDate);
+//             chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {
+//                 console.log("✅ 데이터 저장 완료");
+//                 console.log("전체 데이터 : ", allResults);
+//                 console.log("저장 시각 : ", formattedDate);
 
-                chrome.storage.local.remove("GCPisLoading", () => {
-                    console.log("🟢 GCPisLoading 제거 완료");
+//                 chrome.storage.local.remove("GCPisLoading", () => {
+//                     console.log("🟢 GCPisLoading 제거 완료");
 
-                    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                        if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
-                    });
+//                     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//                         if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
+//                     });
 
-                    sendResponse({ success: true, lastUpdatedTime: formattedDate });
-                });
-            });
-        });
+//                     sendResponse({ success: true, lastUpdatedTime: formattedDate });
+//                 });
+//             });
+//         });
 
-        return true;
-    }
+//         return true;
+//     }
 
-    // 🛑 요청 중단 기능 추가
-    if (message.action === "cancelGCP") {
-        console.log("🛑 GCP 데이터 전송 요청 취소");
-        abortController.abort(); // 현재 진행 중인 요청 중단
-        chrome.storage.local.remove("GCPisLoading"); // UI 상태 해제
-        sendResponse({ success: true, message: "GCP 요청 중단됨" });
-    }
-});
+//     // 🛑 요청 중단 기능 추가
+//     if (message.action === "cancelGCP") {
+//         console.log("🛑 GCP 데이터 전송 요청 취소");
+//         abortController.abort(); // 현재 진행 중인 요청 중단
+//         chrome.storage.local.remove("GCPisLoading"); // UI 상태 해제
+//         sendResponse({ success: true, message: "GCP 요청 중단됨" });
+//     }
+// });

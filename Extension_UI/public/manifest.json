@@ -28,7 +28,7 @@
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://yourtube.store/*"
+    "https://yourtube.store/*",
     "https://whole-model-flask-479381263503.asia-northeast3.run.app/*",
     "https://i.ytimg.com/*"
   ],
