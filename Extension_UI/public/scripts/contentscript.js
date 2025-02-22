@@ -907,11 +907,11 @@ async function injectNewVideos() {
     }
 }
 
-// // 함수 호출
-// injectNewVideos();
+// 함수 호출
+injectNewVideos();
 
-// DOM이 완전히 로드된 후 실행
-window.onload = function () {
-    console.log("✅ Window Loaded, Executing injectNewVideos()");
-    injectNewVideos();
-};
+// // DOM이 완전히 로드된 후 실행
+// window.onload = function () {
+//     console.log("✅ Window Loaded, Executing injectNewVideos()");
+//     injectNewVideos();
+// };

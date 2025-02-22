@@ -77,6 +77,11 @@ const authenticateAndFetchVideos = () => {
                     return null; // 이후 코드 실행 방지
                 }
             }
+            if (response.status === 429) {
+                console.warn("⚠️ 너무 많은 요청 (429). 10초 후 재시도...");
+                setTimeout(authenticateAndFetchVideos, 10000); // 10초 후 재시도
+                return;
+            }
             return response.json();
         })
         .then((data) => {
@@ -117,6 +122,11 @@ const fetchOAuthUrl = () => {
         })
             .then((response) => {
                 if (response.status === 401) return response.json();
+                if (response.status === 429) {
+                    console.warn("⚠️ 너무 많은 요청 (429). 10초 후 재시도...");
+                    setTimeout(fetchOAuthUrl, 10000); // 10초 후 재시도
+                    return;
+                }
                 throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);
             })
             .then((data) => {

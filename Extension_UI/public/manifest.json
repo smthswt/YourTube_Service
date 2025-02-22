@@ -14,7 +14,7 @@
   },
    "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/feed/subscriptions*", "https://yourtube.store/api/oauth2callback"],
+      "matches": ["https://www.youtube.com/feed/subscriptions*"],
       "js": ["scripts/contentscript.js"]
     }
   ],
@@ -33,6 +33,6 @@
     "https://i.ytimg.com/*"
   ],
     "env": {
-    "GCP_CLOUD_RUN_URL": "https://whole-model-flask-479381263503.asia-northeast3.run.app/whole_category"
+      "GCP_CLOUD_RUN_URL": "https://whole-model-flask-479381263503.asia-northeast3.run.app/whole_category"
   }
 }
