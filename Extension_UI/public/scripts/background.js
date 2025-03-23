@@ -157,7 +157,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
 
                 try {
-                    if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
+                    if (index > 0) await new Promise(resolve => setTimeout(resolve, 9000));
 
                     const response = await fetch(GCP_CLOUD_RUN_URL, {
                         method: 'POST',
