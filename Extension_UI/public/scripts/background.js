@@ -8,10 +8,8 @@
 // 매일 두번 (임시) 아침 8시, 밤 12시 alarm 기능으로 API 가져와서 자동 ML 업데이트 진행
 // 1) 알림 관리
 // 2) API 호출 및 데이터 동기화
-// 3) 강력 새로고침
+//3) 강력 새로고침
 
-
-// Force reload: 브라우저 탭을 강제로 새로고침
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "forceReload") {
         chrome.tabs.reload(sender.tab.id, { bypassCache: true }, () => {
@@ -20,7 +18,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// 로컬 스토리지에서 데이터 가져오기
+// 로컬 스토리지에 있는 영상 시각화
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("📩 메시지 수신:", request);
 
@@ -77,6 +75,11 @@ const authenticateAndFetchVideos = () => {
                     return null; // 이후 코드 실행 방지
                 }
             }
+            if (response.status === 429) {
+                console.warn("⚠️ 너무 많은 요청 (429). 10초 후 재시도...");
+                setTimeout(authenticateAndFetchVideos, 10000); // 10초 후 재시도
+                return;
+            }
             return response.json();
         })
         .then((data) => {
@@ -117,6 +120,11 @@ const fetchOAuthUrl = () => {
         })
             .then((response) => {
                 if (response.status === 401) return response.json();
+                if (response.status === 429) {
+                    console.warn("⚠️ 너무 많은 요청 (429). 10초 후 재시도...");
+                    setTimeout(fetchOAuthUrl, 10000); // 10초 후 재시도
+                    return;
+                }
                 throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);
             })
             .then((data) => {

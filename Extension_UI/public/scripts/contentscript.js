@@ -132,7 +132,7 @@ async function injectNewVideos() {
         let selectedCategoryIndex = null;
         let selectedSubCategoryIndex = null;
         //초기 상태 로드
-        let displayedCategories = JSON.parse(localStorage.getItem('displayedCategories'))
+        let displayedCategories = JSON.parse(localStorage.getItem('displayedCategories')) || [...categoryList];
         let wholeData = [];
 
         function handleSubCategoryClick(index, subIndex, event) {
@@ -174,6 +174,10 @@ async function injectNewVideos() {
         function updateCategories(event) {
             console.log("✅ updateCategories 실행됨!", event);
             categoryContainer.innerHTML = '';
+
+            if (!Array.isArray(displayedCategories)) {
+                displayedCategories = [...categoryList];
+            }
 
             displayedCategories.forEach((category, index) => {
                 const categoryBoxContainer = document.createElement('div');

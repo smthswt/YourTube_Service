@@ -68,7 +68,7 @@ def subscriptions():
         youtube = get_authenticated_service(access_token)
         if not youtube:
             return jsonify({"error": "YouTube API service creation failed."}), 500
-        
+
         # 구독 채널 정보 가져오기
         subscriptions = get_subscriptions(youtube)
         if subscriptions is None:
@@ -117,7 +117,7 @@ def oauth2callback():
         # Credentials 객체에서 필요한 정보 추출
         credentials = flow.credentials
         session['access_token'] = credentials.token
-        print(f"세션에 저장된 Access Token: {session.get('access_token')}") 
+        print(f"세션에 저장된 Access Token: {session.get('access_token')}")
 
         # Access Token을 Redirect URL로 전달
         return redirect("/api/videos/subscribed")
