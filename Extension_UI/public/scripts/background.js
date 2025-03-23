@@ -166,12 +166,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// SPA 페이지 전환 감지
-document.addEventListener('yt-navigate-finish', () => {
-    console.log("yt-navigate-finish 이벤트 발생, injectNewVideos 재실행");
-    injectNewVideos();
-});
-
 
 // const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
 

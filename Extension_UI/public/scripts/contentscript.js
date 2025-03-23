@@ -1,5 +1,24 @@
 /* global chrome */
 
+// // 함수 호출
+// injectNewVideos();
+
+// DOM이 완전히 로드된 후 실행
+window.onload = function () {
+    console.log("✅ Window Loaded, Executing injectNewVideos()");
+    injectNewVideos();
+};
+
+// SPA 페이지 전환 감지
+document.addEventListener('yt-navigate-finish', () => {
+    console.log("yt-navigate-finish 이벤트 발생, injectNewVideos 재실행");
+    injectNewVideos();
+});
+
+/**
+ * 삽입 UI 함수
+ * */
+
 let subCategories = {};  // subCategories 객체 정의
 
 async function injectNewVideos() {
@@ -910,12 +929,3 @@ async function injectNewVideos() {
         return;
     }
 }
-
-// // 함수 호출
-// injectNewVideos();
-
-// DOM이 완전히 로드된 후 실행
-window.onload = function () {
-    console.log("✅ Window Loaded, Executing injectNewVideos()");
-    injectNewVideos();
-};
