@@ -842,7 +842,7 @@ async function injectNewVideos() {
             titleText.className = 'title-text';
             titleText.textContent = videoTitle;
             titleText.style = `
-                color: white;
+                color: ${isWhiteTheme ? '#1B1B1B' : "#F1F1F1"};
                 font-weight: bold;
                 font-size: 16px;
                 display: -webkit-box;
@@ -873,7 +873,7 @@ async function injectNewVideos() {
             channelNameDiv.textContent = channelName;
             channelNameDiv.style = `
                 font-size: 14px;
-                color: #aaa;
+                color: ${isWhiteTheme ? '#606060' : '#aaa'};
                 margin-bottom: 3px;
                 cursor: pointer;
                 transition: color 0.3s;
@@ -897,7 +897,7 @@ async function injectNewVideos() {
             viewInfoDiv.textContent = `조회수 ${viewCounts}회 \u2022 ${getTimeDifference(publishTime)}`;
             viewInfoDiv.style = `
                 font-size: 14px;
-                color: #aaa;
+                color: ${isWhiteTheme ? '#606060' : '#aaa'};
             `;
 
             columnDiv2.appendChild(channelNameDiv);
