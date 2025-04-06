@@ -1,83 +1,152 @@
-from flask import Flask, jsonify
+from flask import Flask, redirect, request, jsonify, session
+from flask_session import Session
 from flask_cors import CORS
 import os
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
-import googleapiclient.errors
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
-from urllib.parse import parse_qs, urlparse
-import webbrowser
-import feedparser
+from google.oauth2.credentials import Credentials
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import concurrent.futures
+import feedparser
 import time
+import secrets
+from google.oauth2.credentials import Credentials
+from werkzeug.middleware.proxy_fix import ProxyFix
+import json
 
 app = Flask(__name__)
-# CORS(app)
-# CORS 설정 - 모든 경로에서 CORS 요청 허용
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.secret_key = secrets.token_hex(32)
 CORS(app, resources={r"/*": {"origins": "*"}})
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Limiter 초기화
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["20 per day", "20 per hour"],
+    storage_uri="memory://",
+)
 
+# 세션 관련 설정
+# app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'  # 세션 파일 저장 위치(폴더 만들어서 사용해야함)
+app.config['SESSION_TYPE'] = 'filesystem'  # 세션 데이터를 파일 시스템에 저장
+app.config['SESSION_PERMANENT'] = False   # 세션이 영구적이지 않게 설정 (브라우저 종료 시 만료)
+app.config['SESSION_USE_SIGNER'] = True   # 세션 데이터에 서명을 추가하여 보안을 강화
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 세션 만료 시간 설정 (초 단위)
+Session(app)
 
-# Define the API credentials and scopes
+# Google OAuth 설정
 SCOPES = [
     "https://www.googleapis.com/auth/youtube",
     "https://www.googleapis.com/auth/youtube.force-ssl",
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/youtubepartner"
 ]
-
-# Path to the client_secret.json file
 CLIENT_SECRETS_FILE = 'client_secret.json'
-PORT = 3031
 
-class OAuthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        query_components = parse_qs(urlparse(self.path).query)
-        if "code" in query_components:
-            self.server.code = query_components["code"][0]
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<h1>Authentication successful! You can close this window and return to the console.</h1>")
-        else:
-            self.send_response(400)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<h1>Authentication failed!</h1>")
+@app.route("/")
+@limiter.limit("3 per minute")
+def home():
+    return 'YourTube_Flask_Server'
 
-def authenticate():
+@app.route('/api/videos/subscribed', methods=['GET', 'OPTIONS'])
+@limiter.limit("3 per minute")
+def subscriptions():
+    try:
+        # 프론트엔드에서 전달된 Access Token 확인
+        access_token = session.get('access_token')
+        if not access_token:
+            return jsonify({"authorization_url": get_auth_url()}), 401
+
+        # Bearer 토큰 형식에서 "Bearer " 제거
+        if access_token.startswith("Bearer "):
+            access_token = access_token.split(" ")[1]
+
+        # YouTube API 호출
+        youtube = get_authenticated_service(access_token)
+        if not youtube:
+            return jsonify({"error": "YouTube API service creation failed."}), 500
+
+        # 구독 채널 정보 가져오기
+        subscriptions = get_subscriptions(youtube)
+        if subscriptions is None:
+            return jsonify({"error": "Failed to fetch subscriptions"}), 500
+        print("구독 채널 정보 접근...")
+        # print("Subscriptions:", subscriptions)
+
+        channels = list(map(lambda channel: channel['channelId'], subscriptions))
+        channel_icons = list(map(lambda channel: channel['thumbnail'], subscriptions))
+
+        # 구독 채널 정보는 영상 정보 가져오기 위해서만 쓰고, 영상 정보만 파일에 저장.
+        videos = get_video_info(channels, channel_icons)
+        print("구독 영상 정보 불러오기 완료")
+
+        # ****여기서 반환한 videos 데이터를 client쪽에서 받아서 chrome.storage.local로 저장
+
+        return jsonify({
+            "message": "Data fetched successfully!",
+            "subscriptions": subscriptions,
+            "videos": videos
+        }), 200, {"Content-Type": "application/json; charset=utf-8"}
+    except Exception as e:
+        print(f"Error: {e}")  # 서버 로그에 오류 메시지를 출력
+        return jsonify({'error': str(e)}), 500
+
+def get_auth_url():
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=SCOPES)
-    flow.redirect_uri = f"http://localhost:{PORT}/api/oauth2callback"
-
+        CLIENT_SECRETS_FILE, scopes=SCOPES
+    )
+    flow.redirect_uri = "https://yourtube.store/api/oauth2callback"
     authorization_url, _ = flow.authorization_url(
-        access_type='offline', include_granted_scopes='true')
+        access_type='offline', include_granted_scopes='true'
+    )
+    return authorization_url
 
-    # Start a simple HTTP server to handle the callback
-    server = HTTPServer(('localhost', PORT), OAuthHandler)
-    threading.Thread(target=server.serve_forever).start()
+@app.route('/api/oauth2callback')
+def oauth2callback():
+    try:
+        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+            CLIENT_SECRETS_FILE, scopes=SCOPES)
+        flow.redirect_uri = "https://yourtube.store/api/oauth2callback"
 
-    webbrowser.open(authorization_url)
+        # Authorization Code로 Access Token 발급
+        flow.fetch_token(authorization_response=request.url)
 
-    # Wait for the OAuth2 callback to set the code
-    while not hasattr(server, 'code'):
-        pass
+        # Credentials 객체에서 필요한 정보 추출
+        credentials = flow.credentials
+        session['access_token'] = credentials.token
+        print(f"세션에 저장된 Access Token: {session.get('access_token')}")
 
-    flow.fetch_token(code=server.code)
-    credentials = flow.credentials
+        # Access Token을 Redirect URL로 전달
+        return redirect("/api/videos/subscribed")
+    except Exception as e:
+        print(f"OAuth2 Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    # Shutdown the HTTP server
-    server.shutdown()
-    return credentials
+def get_authenticated_service(access_token):
+    with open(CLIENT_SECRETS_FILE, "r") as file:
+        client_config = json.load(file)["web"]
 
-def get_subscriptions():
-    credentials = authenticate()
+    client_id = client_config["client_id"]
+    client_secret = client_config["client_secret"]
+    token_uri = client_config["token_uri"]
 
-    youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+    # Credentials 객체 생성
+    credentials = Credentials(
+        token=access_token,
+        refresh_token=None,  # Refresh Token 필요 시 추가
+        token_uri=token_uri,
+        client_id=client_id,
+        client_secret=client_secret
+    )
 
+    # YouTube API 클라이언트 생성
+    return googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+
+def get_subscriptions(youtube):
     result = []
     params = {
         'part': 'snippet',
@@ -132,7 +201,7 @@ def get_channel_videos(channel_id, retries=3):
             time.sleep(1)  # 잠시 대기 후 재시도
     return []
 
-# 병렬 처리 코드
+
 def get_video_info(channels, channel_icons):
     result = []
 
@@ -154,50 +223,8 @@ def get_video_info(channels, channel_icons):
                     result.append(video)
             except Exception as exc:
                 print(f"Error fetching videos for channel {channel_id}: {exc}")
-
     return result
 
-
-# Limiter 초기화
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["20 per day", "20 per hour"],
-    storage_uri="memory://",
-)
-
-@app.route("/")
-@limiter.limit("3 per minute")
-def home():
-    return 'YourTube_Flask_Server'
-
-@app.route('/api/videos/subscribed', methods=['GET'])
-@limiter.limit("3 per minute")
-def subscriptions():
-    try:
-        subscriptions = get_subscriptions()
-        print("구독 정보 접근...")
-        channels = list(map(lambda channel: channel['channelId'], subscriptions))
-        channel_icons = list(map(lambda channel: channel['thumbnail'], subscriptions))
-        # 구독 채널 정보는 영상 정보 가져오기 위해서만 쓰고, 영상 정보만 파일에 저장.
-        videos = get_video_info(channels, channel_icons)
-        print("구독 영상 정보 불러오기 완료")
-
-        # ****여기서 반환한 videos 데이터를 client쪽에서 받아서 chrome.storage.local로 저장
-
-        # 영상 샘플 5개 출력 - 확인용
-        print("영상 정보 : ", videos[:5])
-
-        return jsonify({
-            "message": "result from flask",
-            "subscriptions": subscriptions,
-            "videos": videos
-        })
-    except Exception as e:
-        print(f"Error: {e}")  # 서버 로그에 오류 메시지를 출력
-        return jsonify({'error': str(e)}), 500
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8000))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    # Flask 개발 서버 실행
+    app.run(debug=True, host="0.0.0.0", port=8000)

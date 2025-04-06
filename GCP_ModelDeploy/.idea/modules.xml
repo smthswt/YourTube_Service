@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/YourTube_4_Service.iml" filepath="$PROJECT_DIR$/.idea/YourTube_4_Service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/GCPCloudModel.iml" filepath="$PROJECT_DIR$/.idea/GCPCloudModel.iml" />
     </modules>
   </component>
 </project>

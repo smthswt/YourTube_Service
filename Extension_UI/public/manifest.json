@@ -2,7 +2,7 @@
   "name": "YourTube",
   "description": "YOUtube algoRithm TUning Browser Extension",
   "manifest_version": 3,
-  "version": "1.0.6",
+  "version": "1.0.8",
   "icons": {
     "16": "images/YourTube_logo_16.png",
     "32": "images/YourTube_logo_32.png",
@@ -10,11 +10,11 @@
     "128": "images/YourTube_logo_128.png"
   },
   "background": {
-	"service_worker": "scripts/background.js"
+    "service_worker": "scripts/background.js"
   },
-   "content_scripts": [
+  "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/feed/subscriptions*"],
+      "matches": ["https://www.youtube.com/feed/subscriptions*", "https://yourtube.store/api/oauth2callback"],
       "js": ["scripts/contentscript.js"]
     }
   ],
@@ -23,6 +23,13 @@
   },
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://yourtube.store/*",
+    "https://whole-model-flask-479381263503.asia-northeast3.run.app/*",
+    "https://i.ytimg.com/*"
   ]
 }

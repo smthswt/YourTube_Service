@@ -7,17 +7,19 @@ popup.html이 index.html과 같은 의미이다.
 /* global chrome */
 
 import React, {useEffect, useState} from "react";
-import {Box, Button, CircularProgress, Typography} from "@mui/material";
+import {Box, Button, Typography} from "@mui/material";
 import YourTube from "../static/YourTube_logo.png";
 
-const Popup = ({handleSubscription, handleCategoryRequest}) => {
-    const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
+const Popup = ({}) => {
+    const [isLoading, setIsLoading] = useState(false); // flask를 통한 구독영상 로딩
+    const [gcpIsLoading, setGcpIsLoading] = useState(false); //GCP 통한 카테고리 추가 영상 로딩
     const [lastUpdatedTime, setLastUpdatedTime] = useState(null);
 
     // 초기화: 로컬 스토리지에서 로딩 상태 및 업데이트 시간 가져오기
     useEffect(() => {
-        chrome.storage.local.get(["isLoading", "lastUpdatedTime"], (result) => {
+        chrome.storage.local.get(["isLoading", "GCPisLoading", "lastUpdatedTime"], (result) => {
             setIsLoading(result.isLoading || false);
+            setGcpIsLoading(result.GCPisLoading || false);
             setLastUpdatedTime(result.lastUpdatedTime || null);
         });
 
@@ -25,6 +27,9 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
         const onStorageChange = (changes) => {
             if (changes.isLoading) {
                 setIsLoading(changes.isLoading.newValue || false);
+            }
+            if (changes.GCPisLoading) {
+                setGcpIsLoading(changes.GCPisLoading.newValue || false);
             }
             if (changes.lastUpdatedTime) {
                 setLastUpdatedTime(changes.lastUpdatedTime.newValue || null);
@@ -52,6 +57,28 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
         });
     };
 
+    const handleCategoryRequest = () => {
+        setGcpIsLoading(true);
+        chrome.runtime.sendMessage({ action: "sendToGCP" }, (response) => {
+            if (response && response.success) {
+                console.log("카테고리 분류 성공, 현재 시각: ", response.lastUpdatedTime);
+                setLastUpdatedTime(response.lastUpdatedTime);
+            } else {
+                console.error("카테고리 분류 실패:", response.error);
+            }
+            setGcpIsLoading(false);
+        });
+    };
+
+    const handleCancelRequest = () => {
+        chrome.runtime.sendMessage({ action: "cancelGCP" }, (response) => {
+            if (response.success) {
+                console.log("✅ 요청이 중단되었습니다.");
+            } else {
+                console.error("❌ 요청 중단 실패");
+            }
+        });
+    };
 
     return(
         <>
@@ -80,14 +107,21 @@ const Popup = ({handleSubscription, handleCategoryRequest}) => {
                 )}
             </Box>
             <Box marginBottom={1.5}>
-                <Button variant={"contained"} onClick={handleCategoryRequest}>
-                    카테고리 분류
-                </Button>
+                {gcpIsLoading ? (
+                    <Button variant={"contained"} onClick={handleCancelRequest}>
+                        분류 중...
+                    </Button>
+                ) : (
+                    <Button variant={"contained"} onClick={handleCategoryRequest}>
+                        카테고리 분류
+                    </Button>
+                )}
             </Box>
+
             <Box marginBottom={1.5}>
                 <Typography sx={{fontSize: 12, color: "grey", textDecoration: "underline"}} display={'inline'}
                 component="a"
-                href="https://yourtube.shop"
+                href="https://yourtube.my"
                 target="_blank"
                 rel="noopener noreferrer">
                     사용 방법 & 후원
