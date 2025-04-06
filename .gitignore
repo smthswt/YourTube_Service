@@ -1,2 +1,6 @@
 .DS_Store
 client_secret.json
+
+/GCP_ModelDeploy/memo.txt
+/GCP_ModelDeploy/static
+/GCP_ModelDeploy/templates

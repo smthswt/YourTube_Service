@@ -1,0 +1,209 @@
+Index: Extension_UI/public/scripts/background.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/* global chrome */\n/*\n브라우저 영역에서 작동하는 스크립트.\n플러그인의 이벤트 핸들러\n중요한 모든 이벤트 리스너가 여기 저장된다.\n이벤트가 트리거 되고, 할당된 로직을 실행할 때까지 inactive 상태로 유지된다.\n */\n// 매일 두번 (임시) 아침 8시, 밤 12시 alarm 기능으로 API 가져와서 자동 ML 업데이트 진행\n// 1) 알림 관리\n// 2) API 호출 및 데이터 동기화\n// 3) 강력 새로고침\n\n\n// Force reload: 브라우저 탭을 강제로 새로고침\nchrome.runtime.onMessage.addListener((request, sender, sendResponse) => {\n    if (request.action === \"forceReload\") {\n        chrome.tabs.reload(sender.tab.id, { bypassCache: true }, () => {\n            chrome.tabs.sendMessage(sender.tab.id, { action: \"runReplace\" });\n        });\n    }\n});\n\n// 로컬 스토리지에서 데이터 가져오기\nchrome.runtime.onMessage.addListener((request, sender, sendResponse) => {\n    console.log(\"\uD83D\uDCE9 메시지 수신:\", request);\n\n    if (request.action === \"fetchData\") {\n        // chrome.storage.local에서 subscribedVideos 데이터 가져오기\n        chrome.storage.local.get('subscribedVideos', (result) => {\n            if (chrome.runtime.lastError) {\n                // 오류가 있는 경우\n                sendResponse({ success: false, error: chrome.runtime.lastError });\n            } else if (result.subscribedVideos) {\n                // 데이터가 존재하는 경우\n                sendResponse({ success: true, data: result.subscribedVideos });\n            } else {\n                // 데이터가 없는 경우\n                sendResponse({ success: false, error: \"No data found in storage\" });\n            }\n        });\n        return true; // Will respond asynchronously\n    }\n});\n\n// ⏳ OAuth 진행 중인지 확인하는 변수 추가\nlet isAuthenticating = false;\n\n// ✅ OAuth 인증 + 비디오 데이터 가져오기 (하나의 함수로 통합)\nconst authenticateAndFetchVideos = () => {\n    console.log(\"\uD83D\uDD04 authenticateAndFetchVideos() 실행 중...\");\n\n    // ⏳ 요청 시작 전에 로딩 상태 설정\n    chrome.storage.local.set({ isLoading: true }, () => {\n        console.log(\"⏳ 로딩 상태 설정: 시작\");\n    });\n\n    fetchWithTimeout(\"https://yourtube.store/api/videos/subscribed\", {\n        method: \"GET\",\n        headers: {\n            \"Content-Type\": \"application/json\",\n        },\n    })\n        .then((response) => {\n            if (response.status === 401) {\n                console.warn(\"⚠\uFE0F 인증이 필요합니다. OAuth 실행 중...\");\n\n                if (!isAuthenticating) {\n                    isAuthenticating = true;\n                    fetchOAuthUrl()\n                        .then(() => {\n                            console.log(\"✅ OAuth 인증 완료, 다시 fetchVideos 실행\");\n                            authenticateAndFetchVideos(); // 인증 후 재요청\n                        })\n                        .catch((err) => console.error(\"❌ OAuth 실패:\", err))\n                        .finally(() => (isAuthenticating = false));\n\n                    return null; // 이후 코드 실행 방지\n                }\n            }\n            return response.json();\n        })\n        .then((data) => {\n            if (!data) return;\n            if (data.videos) {\n                const now = new Date();\n                const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;\n\n                chrome.storage.local.set(\n                    { subscribedVideos: data.videos, lastUpdatedTime: formattedDate },\n                    () => {\n                        console.log(\"✅ 비디오 데이터 저장 완료:\", data.videos);\n                        chrome.storage.local.remove(\"isLoading\");\n                        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {\n                            if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);\n                        });\n                    }\n                );\n            } else {\n                console.error(\"❌ 비디오 데이터 없음:\", data);\n                chrome.storage.local.remove(\"isLoading\");\n            }\n        })\n        .catch((error) => {\n            console.error(\"❌ 비디오 데이터 가져오기 실패:\", error.message);\n            chrome.storage.local.remove(\"isLoading\");\n        });\n};\n\n// ✅ OAuth 인증 URL 가져오기\nconst fetchOAuthUrl = () => {\n    console.log(\"\uD83D\uDD11 fetchOAuthUrl() 실행 중...\");\n\n    return new Promise((resolve, reject) => {\n        fetchWithTimeout(\"https://yourtube.store/api/videos/subscribed\", {\n            method: \"GET\",\n            headers: { \"Content-Type\": \"application/json\" },\n        })\n            .then((response) => {\n                if (response.status === 401) return response.json();\n                throw new Error(`❌ 네트워크 오류: 상태 코드 ${response.status}`);\n            })\n            .then((data) => {\n                if (!data.authorization_url) throw new Error(\"❌ Authorization URL이 응답에 포함되지 않음\");\n\n                console.log(\"\uD83D\uDD11 OAuth 인증 URL:\", data.authorization_url);\n                chrome.tabs.create({ url: data.authorization_url }, (tab) => {\n                    if (chrome.runtime.lastError) {\n                        reject(\"❌ Google 인증 창 열기 실패: \" + chrome.runtime.lastError);\n                    } else {\n                        console.log(\"✅ Google 인증 창 열림:\", tab);\n\n                        // ✅ 인증 후 자동으로 fetchVideos 실행\n                        setTimeout(() => {\n                            console.log(\"\uD83D\uDD04 OAuth 인증 후 비디오 가져오기 실행...\");\n                            resolve(); // 인증 완료 신호\n                        }, 5000);\n                    }\n                });\n            })\n            .catch(reject);\n    });\n};\n\n// ✅ 타임아웃 함수\nconst fetchWithTimeout = (url, options, timeout = 20000) => {\n    return Promise.race([\n        fetch(url, options),\n        new Promise((_, reject) => setTimeout(() => reject(new Error(\"❌ Request timed out\")), timeout)),\n    ]);\n};\n\n// ✅ 메시지 리스너 (백그라운드 스크립트에서 실행)\nchrome.runtime.onMessage.addListener((message, sender, sendResponse) => {\n    if (message.action === \"fetchSubscribedVideos\") {\n        console.log(\"\uD83D\uDE80 Service Worker에서 구독 영상 가져오기 실행\");\n        authenticateAndFetchVideos();\n        return true; // 비동기 응답\n    }\n});\n\n// const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;\n\n// // \uD83D\uDD34 전송 중단을 위한 AbortController\n// let abortController = new AbortController();\n\n// // ✅ GCP로 데이터 전송 (카테고리 분류 요청)\n// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {\n//     if (message.action === \"sendToGCP\") {\n//         console.log(\"\uD83D\uDCE1 GCP 카테고리 분류 요청 시작\");\n\n//         abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)\n//         chrome.storage.local.set({ GCPisLoading: true });\n\n//         chrome.storage.local.get(\"subscribedVideos\", async (result) => {\n//             if (!result.subscribedVideos || result.subscribedVideos.length === 0) {\n//                 console.error(\"❌ 저장된 데이터 없음\");\n//                 chrome.storage.local.remove(\"GCPisLoading\");\n//                 sendResponse({ success: false, error: \"No data found\" });\n//                 return;\n//             }\n\n//             const formattedData = result.subscribedVideos.map(video => ({\n//                 ...video,\n//                 thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail\n//             }));\n\n//             const CHUNK_SIZE = 50;\n//             const videoChunks = [];\n//             for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {\n//                 videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));\n//             }\n\n//             console.log(`\uD83D\uDE80 총 ${videoChunks.length}개의 배치 전송`);\n\n//             let allResults = [];\n\n//             for (const [index, chunk] of videoChunks.entries()) {\n//                 console.log(`\uD83D\uDCE6 배치 ${index + 1}/${videoChunks.length} 전송`);\n\n//                 try {\n//                     if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));\n\n//                     const response = await fetch(GCP_CLOUD_RUN_URL, {\n//                         method: 'POST',\n//                         headers: { \"Content-Type\": \"application/json\" },\n//                         body: JSON.stringify({ userId: \"Subscribed_Videos\", videos: chunk }),\n//                         signal: abortController.signal // \uD83D\uDCCC AbortController 적용\n//                     });\n\n//                     if (!response.ok) throw new Error(`\uD83D\uDEA8 배치 ${index + 1} 전송 실패`);\n\n//                     const responseData = await response.json();\n//                     console.log(`Batch ${index + 1} Response:`, responseData);\n//                     allResults = allResults.concat(responseData.videos);\n\n//                 } catch (error) {\n//                     if (error.name === \"AbortError\") {\n//                         console.warn(\"\uD83D\uDED1 요청이 중단되었습니다.\");\n//                         chrome.storage.local.remove(\"GCPisLoading\");\n//                         return;\n//                     } else {\n//                         console.error(`❌ 배치 ${index + 1} 실패:`, error);\n//                     }\n//                 }\n//             }\n\n//             const now = new Date();\n//             const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;\n\n//             chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {\n//                 console.log(\"✅ 데이터 저장 완료\");\n//                 console.log(\"전체 데이터 : \", allResults);\n//                 console.log(\"저장 시각 : \", formattedDate);\n\n//                 chrome.storage.local.remove(\"GCPisLoading\", () => {\n//                     console.log(\"\uD83D\uDFE2 GCPisLoading 제거 완료\");\n\n//                     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {\n//                         if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);\n//                     });\n\n//                     sendResponse({ success: true, lastUpdatedTime: formattedDate });\n//                 });\n//             });\n//         });\n\n//         return true;\n//     }\n\n//     // \uD83D\uDED1 요청 중단 기능 추가\n//     if (message.action === \"cancelGCP\") {\n//         console.log(\"\uD83D\uDED1 GCP 데이터 전송 요청 취소\");\n//         abortController.abort(); // 현재 진행 중인 요청 중단\n//         chrome.storage.local.remove(\"GCPisLoading\"); // UI 상태 해제\n//         sendResponse({ success: true, message: \"GCP 요청 중단됨\" });\n//     }\n// });\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Extension_UI/public/scripts/background.js b/Extension_UI/public/scripts/background.js
+--- a/Extension_UI/public/scripts/background.js	
++++ b/Extension_UI/public/scripts/background.js	
+@@ -158,100 +158,100 @@
+     }
+ });
+ 
+-// const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
++const GCP_CLOUD_RUN_URL = chrome.runtime.getManifest().env?.GCP_CLOUD_RUN_URL;
+ 
+-// // 🔴 전송 중단을 위한 AbortController
+-// let abortController = new AbortController();
++// 🔴 전송 중단을 위한 AbortController
++let abortController = new AbortController();
+ 
+-// // ✅ GCP로 데이터 전송 (카테고리 분류 요청)
+-// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+-//     if (message.action === "sendToGCP") {
+-//         console.log("📡 GCP 카테고리 분류 요청 시작");
++// ✅ GCP로 데이터 전송 (카테고리 분류 요청)
++chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
++    if (message.action === "sendToGCP") {
++        console.log("📡 GCP 카테고리 분류 요청 시작");
+ 
+-//         abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)
+-//         chrome.storage.local.set({ GCPisLoading: true });
++        abortController = new AbortController(); // 새로운 컨트롤러 생성 (기존 요청 무효화)
++        chrome.storage.local.set({ GCPisLoading: true });
+ 
+-//         chrome.storage.local.get("subscribedVideos", async (result) => {
+-//             if (!result.subscribedVideos || result.subscribedVideos.length === 0) {
+-//                 console.error("❌ 저장된 데이터 없음");
+-//                 chrome.storage.local.remove("GCPisLoading");
+-//                 sendResponse({ success: false, error: "No data found" });
+-//                 return;
+-//             }
++        chrome.storage.local.get("subscribedVideos", async (result) => {
++            if (!result.subscribedVideos || result.subscribedVideos.length === 0) {
++                console.error("❌ 저장된 데이터 없음");
++                chrome.storage.local.remove("GCPisLoading");
++                sendResponse({ success: false, error: "No data found" });
++                return;
++            }
+ 
+-//             const formattedData = result.subscribedVideos.map(video => ({
+-//                 ...video,
+-//                 thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail
+-//             }));
++            const formattedData = result.subscribedVideos.map(video => ({
++                ...video,
++                thumbnail: Array.isArray(video.thumbnail) ? video.thumbnail[0] : video.thumbnail
++            }));
+ 
+-//             const CHUNK_SIZE = 50;
+-//             const videoChunks = [];
+-//             for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {
+-//                 videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));
+-//             }
++            const CHUNK_SIZE = 50;
++            const videoChunks = [];
++            for (let i = 0; i < formattedData.length; i += CHUNK_SIZE) {
++                videoChunks.push(formattedData.slice(i, i + CHUNK_SIZE));
++            }
+ 
+-//             console.log(`🚀 총 ${videoChunks.length}개의 배치 전송`);
++            console.log(`🚀 총 ${videoChunks.length}개의 배치 전송`);
+ 
+-//             let allResults = [];
++            let allResults = [];
+ 
+-//             for (const [index, chunk] of videoChunks.entries()) {
+-//                 console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
++            for (const [index, chunk] of videoChunks.entries()) {
++                console.log(`📦 배치 ${index + 1}/${videoChunks.length} 전송`);
+ 
+-//                 try {
+-//                     if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
++                try {
++                    if (index > 0) await new Promise(resolve => setTimeout(resolve, 100000));
+ 
+-//                     const response = await fetch(GCP_CLOUD_RUN_URL, {
+-//                         method: 'POST',
+-//                         headers: { "Content-Type": "application/json" },
+-//                         body: JSON.stringify({ userId: "Subscribed_Videos", videos: chunk }),
+-//                         signal: abortController.signal // 📌 AbortController 적용
+-//                     });
++                    const response = await fetch(GCP_CLOUD_RUN_URL, {
++                        method: 'POST',
++                        headers: { "Content-Type": "application/json" },
++                        body: JSON.stringify({ userId: "Subscribed_Videos", videos: chunk }),
++                        signal: abortController.signal // 📌 AbortController 적용
++                    });
+ 
+-//                     if (!response.ok) throw new Error(`🚨 배치 ${index + 1} 전송 실패`);
++                    if (!response.ok) throw new Error(`🚨 배치 ${index + 1} 전송 실패`);
+ 
+-//                     const responseData = await response.json();
+-//                     console.log(`Batch ${index + 1} Response:`, responseData);
+-//                     allResults = allResults.concat(responseData.videos);
++                    const responseData = await response.json();
++                    console.log(`Batch ${index + 1} Response:`, responseData);
++                    allResults = allResults.concat(responseData.videos);
+ 
+-//                 } catch (error) {
+-//                     if (error.name === "AbortError") {
+-//                         console.warn("🛑 요청이 중단되었습니다.");
+-//                         chrome.storage.local.remove("GCPisLoading");
+-//                         return;
+-//                     } else {
+-//                         console.error(`❌ 배치 ${index + 1} 실패:`, error);
+-//                     }
+-//                 }
+-//             }
++                } catch (error) {
++                    if (error.name === "AbortError") {
++                        console.warn("🛑 요청이 중단되었습니다.");
++                        chrome.storage.local.remove("GCPisLoading");
++                        return;
++                    } else {
++                        console.error(`❌ 배치 ${index + 1} 실패:`, error);
++                    }
++                }
++            }
+ 
+-//             const now = new Date();
+-//             const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
++            const now = new Date();
++            const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}시 ${String(now.getMinutes()).padStart(2, '0')}분`;
+ 
+-//             chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {
+-//                 console.log("✅ 데이터 저장 완료");
+-//                 console.log("전체 데이터 : ", allResults);
+-//                 console.log("저장 시각 : ", formattedDate);
++            chrome.storage.local.set({ subscribedVideos: allResults, lastUpdatedTime: formattedDate }, () => {
++                console.log("✅ 데이터 저장 완료");
++                console.log("전체 데이터 : ", allResults);
++                console.log("저장 시각 : ", formattedDate);
+ 
+-//                 chrome.storage.local.remove("GCPisLoading", () => {
+-//                     console.log("🟢 GCPisLoading 제거 완료");
++                chrome.storage.local.remove("GCPisLoading", () => {
++                    console.log("🟢 GCPisLoading 제거 완료");
+ 
+-//                     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+-//                         if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
+-//                     });
++                    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
++                        if (tabs[0]?.id) chrome.tabs.reload(tabs[0].id);
++                    });
+ 
+-//                     sendResponse({ success: true, lastUpdatedTime: formattedDate });
+-//                 });
+-//             });
+-//         });
++                    sendResponse({ success: true, lastUpdatedTime: formattedDate });
++                });
++            });
++        });
+ 
+-//         return true;
+-//     }
++        return true;
++    }
+ 
+-//     // 🛑 요청 중단 기능 추가
+-//     if (message.action === "cancelGCP") {
+-//         console.log("🛑 GCP 데이터 전송 요청 취소");
+-//         abortController.abort(); // 현재 진행 중인 요청 중단
+-//         chrome.storage.local.remove("GCPisLoading"); // UI 상태 해제
+-//         sendResponse({ success: true, message: "GCP 요청 중단됨" });
+-//     }
+-// });
++    // 🛑 요청 중단 기능 추가
++    if (message.action === "cancelGCP") {
++        console.log("🛑 GCP 데이터 전송 요청 취소");
++        abortController.abort(); // 현재 진행 중인 요청 중단
++        chrome.storage.local.remove("GCPisLoading"); // UI 상태 해제
++        sendResponse({ success: true, message: "GCP 요청 중단됨" });
++    }
++});
+Index: Extension_UI/public/manifest.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\n  \"name\": \"YourTube\",\n  \"description\": \"YOUtube algoRithm TUning Browser Extension\",\n  \"manifest_version\": 3,\n  \"version\": \"1.0.8\",\n  \"icons\": {\n    \"16\": \"images/YourTube_logo_16.png\",\n    \"32\": \"images/YourTube_logo_32.png\",\n    \"48\": \"images/YourTube_logo_48.png\",\n    \"128\": \"images/YourTube_logo_128.png\"\n  },\n  \"background\": {\n    \"service_worker\": \"scripts/background.js\"\n  },\n   \"content_scripts\": [\n    {\n      \"matches\": [\"https://www.youtube.com/feed/subscriptions*\", \"https://yourtube.store/api/oauth2callback\"],\n      \"js\": [\"scripts/contentscript.js\"]\n    }\n  ],\n  \"action\": {\n    \"default_popup\": \"index.html\"\n  },\n  \"permissions\": [\n    \"storage\",\n    \"tabs\",\n    \"activeTab\"\n  ],\n  \"host_permissions\": [\n    \"https://www.youtube.com/*\",\n    \"https://yourtube.store/*\",\n    \"https://whole-model-flask-479381263503.asia-northeast3.run.app/*\",\n    \"https://i.ytimg.com/*\"\n  ],\n    \"env\": {\n    \"GCP_CLOUD_RUN_URL\": \"https://whole-model-flask-479381263503.asia-northeast3.run.app/whole_category\"\n  }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Extension_UI/public/manifest.json b/Extension_UI/public/manifest.json
+--- a/Extension_UI/public/manifest.json	
++++ b/Extension_UI/public/manifest.json	
+@@ -14,7 +14,10 @@
+   },
+    "content_scripts": [
+     {
+-      "matches": ["https://www.youtube.com/feed/subscriptions*", "https://yourtube.store/api/oauth2callback"],
++      "matches": [
++        "https://www.youtube.com/feed/subscriptions*",
++        "https://yourtube.store/api/oauth2callback"
++      ],
+       "js": ["scripts/contentscript.js"]
+     }
+   ],
