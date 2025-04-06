@@ -14,7 +14,7 @@ from nltk.tokenize import word_tokenize
 # Flask 앱 생성
 app = Flask(__name__)
 # CORS 설정 - 모든 경로에서 CORS 요청 허용
-CORS(app, resources={r"/*": {"origins": "*"}})
+# CORS(app, resources={r"/*": {"origins": "*"}})
 
 # ✅ nltk 데이터를 로컬 폴더에서 사용하도록 경로 설정
 nltk.data.path.append("/root/nltk_data")

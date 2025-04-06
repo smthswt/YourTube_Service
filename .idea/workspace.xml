@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="759e201e-c66a-401c-b3f1-3303d458a9b2" name="Changes" comment="update: 서비스 워커 비활성화 수정">
+    <list default="true" id="759e201e-c66a-401c-b3f1-3303d458a9b2" name="Changes" comment="Feat: Model_deploy to GCP Cloud Run">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend_Server/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GCP_ModelDeploy/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/GCP_ModelDeploy/app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,7 +25,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="develop" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -357,6 +360,7 @@
     <MESSAGE value="update: UI 삽입 불가 현상 수정" />
     <MESSAGE value="update: 머지 수정" />
     <MESSAGE value="update: 서비스 워커 비활성화 수정" />
-    <option name="LAST_COMMIT_MESSAGE" value="update: 서비스 워커 비활성화 수정" />
+    <MESSAGE value="Feat: Model_deploy to GCP Cloud Run" />
+    <option name="LAST_COMMIT_MESSAGE" value="Feat: Model_deploy to GCP Cloud Run" />
   </component>
 </project>
